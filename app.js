@@ -45,6 +45,26 @@ const mainView = document.getElementById('main-view');
 const pageTitle = document.getElementById('page-title');
 const navItems = document.querySelectorAll('.nav-item');
 
+// --- SISTEMA DE NOTIFICACIONES ---
+const toastContainer = document.createElement('div');
+toastContainer.className = 'toast-container';
+document.body.appendChild(toastContainer);
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+    toast.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
+    toastContainer.appendChild(toast);
+    if (window.lucide) lucide.createIcons();
+    
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
 // --- LÓGICA DE NAVEGACIÓN ---
 navItems.forEach(item => {
     item.addEventListener('click', (e) => {
@@ -59,15 +79,31 @@ navItems.forEach(item => {
 });
 
 function renderView(viewName) {
+    mainView.style.alignItems = 'flex-start';
+    mainView.style.justifyContent = 'flex-start';
+    
     switch(viewName) {
         case 'Panel':
             mainView.innerHTML = `<div class="dashboard-content"><h2>Panel Principal</h2><p>Bienvenido al sistema de gestión.</p></div>`;
             break;
         case 'Clientes':
-            mainView.innerHTML = `<h2>Clientes</h2><div id="clients-list">Cargando lista...</div>`;
+            mainView.innerHTML = `
+                <div class="view-header">
+                    <h2>Clientes</h2>
+                    <div class="header-actions">
+                        <button id="btn-export" class="btn btn-outline btn-sm">
+                            <i data-lucide="download"></i>
+                            <span>Exportar a Excel</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="clients-list" class="clients-table-container">Cargando lista...</div>`;
+            document.getElementById('btn-export').onclick = exportClientsToExcel;
             loadClientsList();
             break;
         case 'Landing':
+            mainView.style.alignItems = 'center';
+            mainView.style.justifyContent = 'center';
             mainView.innerHTML = `<div class="empty-state"><i data-lucide="shield-check"></i><h2>Bienvenido</h2><p>Inicia sesión como empresa.</p></div>`;
             break;
         default:
@@ -167,14 +203,30 @@ function renderSettingsTab(tab) {
         loadCommercials();
         document.getElementById('comm-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await addDoc(collection(db, "commercials"), {
-                companyId: auth.currentUser.uid,
-                name: document.getElementById('comm-name').value,
-                email: document.getElementById('comm-email').value,
-                code: document.getElementById('comm-code').value.toUpperCase(),
-                createdAt: new Date().toISOString()
-            });
-            loadCommercials();
+            const btn = e.target.querySelector('button');
+            const originalHtml = btn.innerHTML;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = `<div class="spinner"></div><span>Guardando...</span>`;
+                
+                await addDoc(collection(db, "commercials"), {
+                    companyId: auth.currentUser.uid,
+                    name: document.getElementById('comm-name').value,
+                    email: document.getElementById('comm-email').value,
+                    code: document.getElementById('comm-code').value.toUpperCase(),
+                    createdAt: new Date().toISOString()
+                });
+                
+                showToast("Comercial creado con éxito", "success");
+                e.target.reset();
+                loadCommercials();
+            } catch (err) {
+                showToast("Error al crear comercial: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         });
     } else if (tab === 'Clientes') {
         container.innerHTML = `
@@ -244,17 +296,37 @@ async function uploadData() {
         mapping[el.dataset.orig] = { name: el.value, vis };
     });
 
-    let count = 0;
-    for (const row of tempFileData) {
-        const final = { companyId: auth.currentUser.uid };
-        Object.keys(row).forEach(k => {
-            if (mapping[k] && mapping[k].vis) final[mapping[k].name] = row[k];
-        });
-        await addDoc(collection(db, "clients"), final);
-        count++;
+    const btn = document.getElementById('save-map');
+    const originalHtml = btn.innerHTML;
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div><span>Subiendo...</span>`;
+        
+        let count = 0;
+        for (const row of tempFileData) {
+            const final = { companyId: auth.currentUser.uid };
+            let hasData = false;
+            Object.keys(row).forEach(k => {
+                if (mapping[k] && mapping[k].vis) {
+                    final[mapping[k].name] = row[k];
+                    hasData = true;
+                }
+            });
+            if (hasData) {
+                await addDoc(collection(db, "clients"), final);
+                count++;
+            }
+        }
+        showToast(`Se han subido ${count} clientes correctamente`, "success");
+        closeModal();
+        if (pageTitle.innerText === 'Clientes') loadClientsList();
+    } catch (err) {
+        showToast("Error al subir datos: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
     }
-    alert(`Subidos ${count} clientes.`);
-    closeModal();
 }
 
 // --- CLIENTS LIST ---
@@ -274,6 +346,47 @@ async function loadClientsList() {
         html += '</tr>';
     });
     list.innerHTML = html + '</tbody></table>';
+}
+
+// --- EXPORTAR A EXCEL ---
+async function exportClientsToExcel() {
+    const btn = document.getElementById('btn-export');
+    const originalHtml = btn.innerHTML;
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div><span>Exportando...</span>`;
+        
+        const q = query(collection(db, "clients"), where("companyId", "==", auth.currentUser.uid));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            showToast("No hay clientes para exportar", "info");
+            return;
+        }
+        
+        const data = [];
+        snap.forEach(doc => {
+            const d = doc.data();
+            delete d.companyId; // No exportar el ID de empresa
+            data.push(d);
+        });
+        
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Clientes");
+        
+        // Generar nombre de archivo con fecha
+        const date = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(workbook, `Clientes_CRM_${date}.xlsx`);
+        
+        showToast("Archivo Excel generado con éxito", "success");
+    } catch (err) {
+        showToast("Error al exportar: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
 }
 
 onAuthStateChanged(auth, (user) => {
