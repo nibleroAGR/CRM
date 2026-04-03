@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Comercial | Gestión Inteligente</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Vertical -->
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="logo">
+                    <i data-lucide="zap" class="logo-icon"></i>
+                    <span class="logo-text">CRM<span>Pro</span></span>
+                </div>
+                <nav class="nav-menu">
+                    <a href="#" class="nav-item active" title="Dashboard">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span class="nav-label">Panel</span>
+                    </a>
+                    <a href="#" class="nav-item" title="Clientes">
+                        <i data-lucide="users"></i>
+                        <span class="nav-label">Clientes</span>
+                    </a>
+                    <a href="#" class="nav-item" title="Llamadas">
+                        <i data-lucide="phone-call"></i>
+                        <span class="nav-label">Llamadas</span>
+                    </a>
+                    <a href="#" class="nav-item" title="Ventas">
+                        <i data-lucide="trending-up"></i>
+                        <span class="nav-label">Ventas</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="sidebar-bottom">
+                <a href="#" id="settings-btn" class="nav-item" title="Configuración">
+                    <i data-lucide="settings"></i>
+                    <span class="nav-label">Ajustes</span>
+                </a>
+                <div class="user-profile" id="login-trigger">
+                    <div class="avatar">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">Iniciar Sesión</span>
+                        <span class="user-role">Empresa</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="page-title">Panel de Control</h1>
+                <div class="top-actions">
+                    <div class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" placeholder="Buscar...">
+                    </div>
+                    <button class="btn btn-primary">
+                        <i data-lucide="plus"></i>
+                        <span>Nuevo Registro</span>
+                    </button>
+                </div>
+            </header>
+
+            <section class="content-area" id="main-view">
+                <!-- Aquí se cargará el contenido dinámicamente -->
+                <div class="empty-state">
+                    <i data-lucide="layers"></i>
+                    <h2>Bienvenido al CRM Comercial</h2>
+                    <p>Inicia sesión como empresa para gestionar tus comerciales y ver estadísticas en tiempo real.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modales para Auth/Config (Hidden by default) -->
+    <div id="modal-container" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-title">Acceso Empresa</h3>
+                <button class="close-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="modal-content">
+                <!-- Dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Version modular) -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
