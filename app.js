@@ -30,16 +30,10 @@ const firebaseConfig = {
     measurementId: "G-K1M4NFGGKN"
 };
 
-// Inicializar Firebase con Manejo de Errores
-let app, auth, db;
-try {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    console.log("Firebase inicializado correctamente.");
-} catch (error) {
-    console.error("Fallo al inicializar Firebase:", error);
-}
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // --- SELECTORES DOM ---
 const modal = document.getElementById('modal-container');
@@ -56,7 +50,6 @@ navItems.forEach(item => {
     item.addEventListener('click', (e) => {
         e.preventDefault();
         if (item.id === 'settings-btn') return;
-        
         navItems.forEach(n => n.classList.remove('active'));
         item.classList.add('active');
         const view = item.querySelector('.nav-label').innerText;
@@ -66,40 +59,30 @@ navItems.forEach(item => {
 });
 
 function renderView(viewName) {
-    console.log("Renderizando vista:", viewName);
     switch(viewName) {
         case 'Panel':
-            mainView.innerHTML = `
-                <div class="dashboard-content">
-                    <h2>Resumen de Actividad</h2>
-                    <p>Cargando datos del equipo...</p>
-                </div>`;
+            mainView.innerHTML = `<div class="dashboard-content"><h2>Panel Principal</h2><p>Bienvenido al sistema de gestión.</p></div>`;
             break;
         case 'Clientes':
-            mainView.innerHTML = `<h2>Base de Datos</h2><p>Leads y oportunidades comerciales.</p>`;
+            mainView.innerHTML = `<h2>Clientes</h2><div id="clients-list">Cargando lista...</div>`;
+            loadClientsList();
             break;
         case 'Landing':
-            mainView.innerHTML = `
-                <div class="empty-state">
-                    <i data-lucide="shield-check"></i>
-                    <h2>Bienvenido</h2>
-                    <p>Inicia sesión para gestionar el equipo.</p>
-                </div>`;
+            mainView.innerHTML = `<div class="empty-state"><i data-lucide="shield-check"></i><h2>Bienvenido</h2><p>Inicia sesión como empresa.</p></div>`;
             break;
         default:
-            mainView.innerHTML = `<h2>Vista ${viewName}</h2>`;
+            mainView.innerHTML = `<h2>${viewName}</h2>`;
     }
-    if (window.lucide) window.lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
 }
 
 // --- GESTIÓN DE MODALES ---
 function openModal(title, contentHTML) {
-    console.log("Abriendo modal:", title);
     modalTitle.innerText = title;
     modalContent.innerHTML = contentHTML;
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    if (window.lucide) window.lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
 }
 
 function closeModal() {
@@ -108,132 +91,197 @@ function closeModal() {
 }
 
 document.querySelector('.close-modal').addEventListener('click', closeModal);
-
-// Cerrar modal al hacer clic fuera (Overlay)
-window.onclick = function(event) {
-    if (event.target == modal) {
-        closeModal();
-    }
-}
+window.onclick = (e) => { if (e.target == modal) closeModal(); };
 
 // --- AUTENTICACIÓN ---
 function renderAuthForm(mode = 'login') {
-    let authHTML = '';
-    let title = 'Acceso';
-
-    if (mode === 'login') {
-        title = 'Iniciar Sesión';
-        authHTML = `
-            <form id="auth-form">
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="email" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Contraseña</label>
-                    <input type="password" id="password" class="form-control" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width:100%">Ingresar</button>
-                <div style="text-align:center; margin-top:15px; font-size:13px;">
-                    <a href="#" id="go-recover">¿Has olvidado tu contraseña?</a><br><br>
-                    ¿Eres nuevo? <a href="#" id="go-signup">Crea una cuenta</a>
-                </div>
-            </form>
-        `;
-    } else if (mode === 'signup') {
-        title = 'Nueva Cuenta';
-        authHTML = `
-            <form id="auth-form">
-                <div class="form-group">
-                    <label class="form-label">Email Empresa</label>
-                    <input type="email" id="email" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Contraseña</label>
-                    <input type="password" id="password" class="form-control" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width:100%">Registrarse</button>
-                <p style="text-align:center; margin-top:15px; font-size:13px;">
-                    <a href="#" id="go-login">Volver al login</a>
-                </p>
-            </form>
-        `;
-    } else if (mode === 'recover') {
-        title = 'Recuperar Cuenta';
-        authHTML = `
-            <form id="auth-form">
-                <p style="font-size:13px; margin-bottom:15px;">Te enviaremos un email para restablecer tu clave.</p>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="email" class="form-control" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width:100%">Enviar Email</button>
-                <p style="text-align:center; margin-top:15px; font-size:13px;">
-                    <a href="#" id="go-login">Volver al login</a>
-                </p>
-            </form>
-        `;
-    }
-
+    let title = 'Acceso Empresa';
+    let authHTML = `
+        <form id="auth-form">
+            <div class="form-group"><label class="form-label">Email</label><input type="email" id="email" class="form-control" required></div>
+            ${mode === 'recover' ? '' : '<div class="form-group"><label class="form-label">Contraseña</label><input type="password" id="password" class="form-control" required></div>'}
+            <button type="submit" class="btn btn-primary" style="width:100%">${mode==='login'?'Entrar':mode==='signup'?'Registrar':'Recuperar'}</button>
+            <div style="text-align:center; margin-top:15px; font-size:13px;">
+                ${mode==='login'?'<a href="#" id="go-recover">¿Has olvidado tu clave?</a><br><br>¿Nuevo? <a href="#" id="go-signup">Crea cuenta</a>' : '<a href="#" id="go-login">Volver al login</a>'}
+            </div>
+        </form>`;
+    
     openModal(title, authHTML);
-
-    // Eventos del formulario
-    document.getElementById('go-signup')?.addEventListener('click', (e) => { e.preventDefault(); renderAuthForm('signup'); });
-    document.getElementById('go-login')?.addEventListener('click', (e) => { e.preventDefault(); renderAuthForm('login'); });
-    document.getElementById('go-recover')?.addEventListener('click', (e) => { e.preventDefault(); renderAuthForm('recover'); });
+    document.getElementById('go-signup')?.addEventListener('click', () => renderAuthForm('signup'));
+    document.getElementById('go-login')?.addEventListener('click', () => renderAuthForm('login'));
+    document.getElementById('go-recover')?.addEventListener('click', () => renderAuthForm('recover'));
 
     document.getElementById('auth-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value;
-        const password = document.getElementById('password')?.value;
-
+        const pass = document.getElementById('password')?.value;
         try {
-            if (mode === 'login') {
-                await signInWithEmailAndPassword(auth, email, password);
-            } else if (mode === 'signup') {
-                await createUserWithEmailAndPassword(auth, email, password);
-            } else if (mode === 'recover') {
-                await sendPasswordResetEmail(auth, email);
-                alert("Email enviado.");
-            }
+            if (mode==='login') await signInWithEmailAndPassword(auth, email, pass);
+            else if (mode==='signup') await createUserWithEmailAndPassword(auth, email, pass);
+            else { await sendPasswordResetEmail(auth, email); alert("Email enviado"); }
             closeModal();
-        } catch (error) {
-            alert("Error: " + error.message);
-        }
+        } catch (err) { alert("Error: " + err.message); }
     });
 }
 
-// Trigger de login
 loginBtn.addEventListener('click', () => {
-    console.log("Login Btn Clicked. User:", auth.currentUser);
-    if (auth.currentUser) {
-        if (confirm("Cerrar sesión de " + auth.currentUser.email + "?")) {
-            signOut(auth);
-        }
-    } else {
-        renderAuthForm('login');
-    }
+    if (auth.currentUser) { if (confirm("¿Cerrar sesión?")) signOut(auth).then(() => location.reload()); }
+    else renderAuthForm('login');
 });
 
-// Configuración
+// --- CONFIGURACIÓN MODULAR ---
 settingsBtn.addEventListener('click', () => {
-    if (!auth.currentUser) {
-        alert("Inicia sesión primero.");
-        return;
-    }
-    openModal('Equipo', `<div>Panel de configuración de comerciales.</div>`);
+    if (!auth.currentUser) return renderAuthForm('login');
+    renderSettings('Equipo');
 });
 
-// Listener Auth
+function renderSettings(activeTab) {
+    openModal('Configuración', `
+        <div class="settings-container">
+            <nav class="settings-nav">
+                <div class="settings-tab ${activeTab==='Equipo'?'active':''}" data-tab="Equipo">Equipo</div>
+                <div class="settings-tab ${activeTab==='Clientes'?'active':''}" data-tab="Clientes">Clientes</div>
+            </nav>
+            <div class="tab-content" id="settings-tab-content"></div>
+        </div>`);
+    document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.addEventListener('click', () => renderSettings(tab.dataset.tab));
+    });
+    renderSettingsTab(activeTab);
+}
+
+function renderSettingsTab(tab) {
+    const container = document.getElementById('settings-tab-content');
+    if (tab === 'Equipo') {
+        container.innerHTML = `
+            <h4>Gestión de Equipo</h4>
+            <form id="comm-form" style="margin-top:10px">
+                <input type="text" id="comm-name" class="form-control" placeholder="Nombre" required style="margin-bottom:10px">
+                <div style="display:grid; grid-template-columns: 1fr 100px; gap:10px; margin-bottom:10px">
+                    <input type="email" id="comm-email" class="form-control" placeholder="Email" required>
+                    <input type="text" id="comm-code" class="form-control" placeholder="CÓDIGO" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Dar de Alta</button>
+            </form>
+            <div id="team-list" style="margin-top:20px">Cargando...</div>`;
+        loadCommercials();
+        document.getElementById('comm-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await addDoc(collection(db, "commercials"), {
+                companyId: auth.currentUser.uid,
+                name: document.getElementById('comm-name').value,
+                email: document.getElementById('comm-email').value,
+                code: document.getElementById('comm-code').value.toUpperCase(),
+                createdAt: new Date().toISOString()
+            });
+            loadCommercials();
+        });
+    } else if (tab === 'Clientes') {
+        container.innerHTML = `
+            <h4>Importar Clientes</h4>
+            <input type="file" id="file-in" accept=".csv,.xlsx" style="margin-top:10px">
+            <div id="mapping-area" style="display:none; margin-top:20px">
+                <h5>Mapeo de Columnas</h5>
+                <table class="mapping-table"><thead><tr><th>Original</th><th>App</th><th>Visible</th></tr></thead><tbody id="map-body"></tbody></table>
+                <button id="save-map" class="btn btn-primary btn-sm" style="margin-top:10px">Guardar y Subir</button>
+            </div>`;
+        document.getElementById('file-in').addEventListener('change', handleFile);
+    }
+}
+
+async function loadCommercials() {
+    const list = document.getElementById('team-list');
+    const q = query(collection(db, "commercials"), where("companyId", "==", auth.currentUser.uid));
+    const snap = await getDocs(q);
+    list.innerHTML = snap.empty ? 'No hay comerciales.' : '';
+    snap.forEach(doc => {
+        const d = doc.data();
+        list.innerHTML += `<div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between">
+            <span>${d.name} (${d.email})</span>
+            <span class="badge" style="color:var(--accent); font-weight:700">${d.code}</span>
+        </div>`;
+    });
+}
+
+let tempFileData = [];
+function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+        const bstr = evt.target.result;
+        let data = [];
+        if (file.name.endsWith('.csv')) {
+            Papa.parse(bstr, { header: true, complete: (res) => { data = res.data; showMapping(res.meta.fields, data); }});
+        } else {
+            const wb = XLSX.read(bstr, {type:'binary'});
+            data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            showMapping(Object.keys(data[0]), data);
+        }
+    };
+    reader.readAsBinaryString(file);
+}
+
+function showMapping(headers, data) {
+    tempFileData = data;
+    document.getElementById('mapping-area').style.display='block';
+    const body = document.getElementById('map-body');
+    body.innerHTML = '';
+    headers.forEach(h => {
+        body.innerHTML += `<tr>
+            <td>${h}</td>
+            <td><input type="text" class="form-control map-custom" value="${h}" data-orig="${h}"></td>
+            <td><input type="checkbox" class="map-vis" checked></td>
+        </tr>`;
+    });
+    document.getElementById('save-map').onclick = () => uploadData();
+}
+
+async function uploadData() {
+    const mapping = {};
+    document.querySelectorAll('.map-custom').forEach((el, i) => {
+        const vis = document.querySelectorAll('.map-vis')[i].checked;
+        mapping[el.dataset.orig] = { name: el.value, vis };
+    });
+
+    let count = 0;
+    for (const row of tempFileData) {
+        const final = { companyId: auth.currentUser.uid };
+        Object.keys(row).forEach(k => {
+            if (mapping[k] && mapping[k].vis) final[mapping[k].name] = row[k];
+        });
+        await addDoc(collection(db, "clients"), final);
+        count++;
+    }
+    alert(`Subidos ${count} clientes.`);
+    closeModal();
+}
+
+// --- CLIENTS LIST ---
+async function loadClientsList() {
+    const list = document.getElementById('clients-list');
+    const q = query(collection(db, "clients"), where("companyId", "==", auth.currentUser.uid));
+    const snap = await getDocs(q);
+    if (snap.empty) { list.innerHTML = 'No hay datos.'; return; }
+    let html = '<table class="mapping-table"><thead><tr>';
+    const firstDoc = snap.docs[0].data();
+    Object.keys(firstDoc).forEach(k => { if(k!=='companyId') html += `<th>${k}</th>`; });
+    html += '</tr></thead><tbody>';
+    snap.forEach(doc => {
+        const d = doc.data();
+        html += '<tr>';
+        Object.keys(firstDoc).forEach(k => { if(k!=='companyId') html += `<td>${d[k] || ''}</td>`; });
+        html += '</tr>';
+    });
+    list.innerHTML = html + '</tbody></table>';
+}
+
 onAuthStateChanged(auth, (user) => {
-    console.log("Estado de Auth cambiado:", user ? user.email : "Desconectado");
     if (user) {
         document.querySelector('.user-name').innerText = user.email.split('@')[0];
-        document.querySelector('.user-role').innerText = "Empresa";
         renderView('Panel');
     } else {
         document.querySelector('.user-name').innerText = "Iniciar Sesión";
-        document.querySelector('.user-role').innerText = "Empresa";
         renderView('Landing');
     }
 });
