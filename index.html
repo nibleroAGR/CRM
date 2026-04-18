@@ -3,105 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Comercial | Gestión Inteligente</title>
+    <title>Sleek CRM - Gestión de Tareas Inteligente</title>
+    <meta name="description" content="Sistema CRM personalizado para control de tareas, programación y gestión de flujos de trabajo en tiempo real.">
+    
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- PapaParse & SheetJS for CSV/Excel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar Vertical -->
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="logo">
-                    <i data-lucide="zap" class="logo-icon"></i>
-                    <span class="logo-text">CRM<span>Pro</span></span>
-                </div>
-                <nav class="nav-menu">
-                    <a href="#" class="nav-item active" title="Dashboard">
-                        <i data-lucide="layout-dashboard"></i>
-                        <span class="nav-label">Panel</span>
-                    </a>
-                    <a href="#" class="nav-item" title="Clientes">
-                        <i data-lucide="users"></i>
-                        <span class="nav-label">Clientes</span>
-                    </a>
-                    <a href="#" class="nav-item" title="Llamadas">
-                        <i data-lucide="phone-call"></i>
-                        <span class="nav-label">Llamadas</span>
-                    </a>
-                    <a href="#" class="nav-item" title="Ventas">
-                        <i data-lucide="trending-up"></i>
-                        <span class="nav-label">Ventas</span>
-                    </a>
-                </nav>
+    <div id="app-container">
+        <!-- Columna Izquierda: Navegación -->
+        <aside id="sidebar">
+            <div class="logo-container">
+                <i class="fas fa-rocket logo-icon"></i>
+                <span class="logo-text">CRM PRO</span>
             </div>
-            
-            <div class="sidebar-bottom">
-                <a href="#" id="settings-btn" class="nav-item" title="Configuración">
-                    <i data-lucide="settings"></i>
-                    <span class="nav-label">Ajustes</span>
-                </a>
-                <div class="user-profile" id="login-trigger">
-                    <div class="avatar">
-                        <i data-lucide="user"></i>
-                    </div>
+            <nav id="main-nav">
+                <!-- Los botones se cargarán dinámicamente o según el usuario explique -->
+                <div class="nav-section-title">MENÚ PRINCIPAL</div>
+                <ul id="nav-list">
+                    <!-- Ejemplo de botones que vendrán luego -->
+                    <li class="nav-item active" id="btn-dashboard">
+                        <i class="fas fa-th-large"></i> <span>Dashboard</span>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div id="user-profile">
+                    <div class="user-avatar">?</div>
                     <div class="user-info">
-                        <span class="user-name">Iniciar Sesión</span>
-                        <span class="user-role">Empresa</span>
+                        <span class="user-name">Usuario CRM</span>
+                        <span class="user-status">Online</span>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <!-- Contenido Principal -->
-        <main class="main-content">
-            <header class="top-bar">
-                <h1 id="page-title">Panel de Control</h1>
-                <div class="top-actions">
-                    <div class="search-box">
-                        <i data-lucide="search"></i>
-                        <input type="text" placeholder="Buscar...">
-                    </div>
-                    <button class="btn btn-primary">
-                        <i data-lucide="plus"></i>
-                        <span>Nuevo Registro</span>
+        <!-- Columna Central: Contenido Principal (65%) -->
+        <main id="main-content">
+            <header id="content-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar tareas, clientes o módulos...">
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="btn-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge"></span>
+                    </button>
+                    <button class="icon-btn" id="btn-settings">
+                        <i class="fas fa-cog"></i>
                     </button>
                 </div>
             </header>
-
-            <section class="content-area" id="main-view">
-                <!-- Aquí se cargará el contenido dinámicamente -->
-                <div class="empty-state">
-                    <i data-lucide="layers"></i>
-                    <h2>Bienvenido al CRM Comercial</h2>
-                    <p>Inicia sesión como empresa para gestionar tus comerciales y ver estadísticas en tiempo real.</p>
+            
+            <section id="module-viewport">
+                <!-- Aquí se cargará dinámicamente la aplicación de cada módulo -->
+                <div class="view-placeholder">
+                    <h2>Bienvenido</h2>
+                    <p>Selecciona un módulo en la barra lateral para comenzar.</p>
                 </div>
             </section>
         </main>
+
+        <!-- Columna Derecha: Tareas Programadas -->
+        <section id="task-column">
+            <div class="task-column-header">
+                <h3>Tareas Programadas</h3>
+                <button id="btn-quick-add-task" class="add-btn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div id="task-list-container">
+                <!-- Ejemplo de estructura de tareas por fecha -->
+                <div class="task-date-group">
+                    <div class="date-divider">HOY, 19 ABRIL</div>
+                    <div class="task-item high">
+                        <div class="task-time">09:00</div>
+                        <div class="task-info">
+                            <h4>Reunión de Equipo</h4>
+                            <p>Planificación semanal CRM</p>
+                        </div>
+                        <div class="task-check">
+                            <input type="checkbox">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <!-- Modales para Auth/Config (Hidden by default) -->
-    <div id="modal-container" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 id="modal-title">Acceso Empresa</h3>
-                <button class="close-modal"><i data-lucide="x"></i></button>
+    <!-- Auth Screen -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fas fa-rocket logo-icon"></i>
+                <h2 id="auth-title">Bienvenido a CRM PRO</h2>
+                <p id="auth-subtitle">Ingresa tus credenciales para continuar</p>
             </div>
-            <div class="modal-body" id="modal-content">
-                <!-- Dinámico -->
+            
+            <form id="auth-form">
+                <div class="auth-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="auth-email" placeholder="ejemplo@correo.com" required>
+                </div>
+                <div class="auth-group" id="pass-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="auth-password" placeholder="••••••••">
+                </div>
+                
+                <button type="submit" id="btn-auth-submit" class="btn-primary w-full">Iniciar Sesión</button>
+            </form>
+
+            <div class="auth-footer">
+                <button id="btn-switch-register" class="link-btn">¿No tienes cuenta? Regístrate</button>
+                <button id="btn-switch-forgot" class="link-btn">Olvidé mi contraseña</button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK (Version modular) -->
+    <!-- Firebase Scripts -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

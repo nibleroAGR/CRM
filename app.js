@@ -1,25 +1,7 @@
-// CRM Comercial - Lógica Principal
-console.log("Cargando CRM App...");
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
-    getAuth, 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword, 
-    onAuthStateChanged,
-    signOut,
-    sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { 
-    getFirestore, 
-    collection, 
-    addDoc, 
-    getDocs, 
-    query, 
-    where 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// --- CONFIGURACIÓN DE FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyAZ0BULc3KDh71l1_neyQiW54sTo_muQVg",
     authDomain: "html-127c3.firebaseapp.com",
@@ -30,371 +12,464 @@ const firebaseConfig = {
     measurementId: "G-K1M4NFGGKN"
 };
 
-// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// --- SELECTORES DOM ---
-const modal = document.getElementById('modal-container');
-const modalContent = document.getElementById('modal-content');
-const modalTitle = document.getElementById('modal-title');
-const loginBtn = document.getElementById('login-trigger');
-const settingsBtn = document.getElementById('settings-btn');
-const mainView = document.getElementById('main-view');
-const pageTitle = document.getElementById('page-title');
-const navItems = document.querySelectorAll('.nav-item');
+// --- ESTADO GLOBAL ---
+let currentModule = 'dashboard';
+let authMode = 'login'; // 'login', 'register', 'forgot'
+let modulesVisibility = {
+    'tareas-fijas': true,
+    'tareas-programadas': true,
+    'historico': true
+};
 
-// --- SISTEMA DE NOTIFICACIONES ---
-const toastContainer = document.createElement('div');
-toastContainer.className = 'toast-container';
-document.body.appendChild(toastContainer);
-
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
-    toast.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
-    toastContainer.appendChild(toast);
-    if (window.lucide) lucide.createIcons();
-    
-    setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
-}
-
-// --- LÓGICA DE NAVEGACIÓN ---
-navItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (item.id === 'settings-btn') return;
-        navItems.forEach(n => n.classList.remove('active'));
-        item.classList.add('active');
-        const view = item.querySelector('.nav-label').innerText;
-        pageTitle.innerText = view;
-        renderView(view);
-    });
+// --- INICIALIZACIÓN ---
+document.addEventListener('DOMContentLoaded', () => {
+    initAuthListener();
+    setupEventListeners();
+    setupAuthUI();
 });
 
-function renderView(viewName) {
-    mainView.style.alignItems = 'flex-start';
-    mainView.style.justifyContent = 'flex-start';
-    
-    switch(viewName) {
-        case 'Panel':
-            mainView.innerHTML = `<div class="dashboard-content"><h2>Panel Principal</h2><p>Bienvenido al sistema de gestión.</p></div>`;
+function initAuthListener() {
+    onAuthStateChanged(auth, (user) => {
+        const authScreen = document.getElementById('auth-screen');
+        const appContainer = document.getElementById('app-container');
+        
+        if (user) {
+            authScreen.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            document.querySelector('.user-name').innerText = user.email.split('@')[0];
+            initApp();
+        } else {
+            authScreen.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+        }
+    });
+}
+
+async function initApp() {
+    loadModulesConfig();
+    renderSidebar();
+    loadDailyTasks(); // Carga la columna derecha
+    loadModule('dashboard'); 
+}
+
+// --- GESTIÓN DE MÓDULOS (SIDEBAR) ---
+function renderSidebar() {
+    const navList = document.getElementById('nav-list');
+    navList.innerHTML = `
+        <li class="nav-item ${currentModule === 'dashboard' ? 'active' : ''}" id="btn-dashboard">
+            <i class="fas fa-th-large"></i> <span>Dashboard</span>
+        </li>
+    `;
+
+    if (modulesVisibility['tareas-fijas']) {
+        navList.innerHTML += `
+            <li class="nav-item ${currentModule === 'tareas-fijas' ? 'active' : ''}" id="btn-tareas-fijas">
+                <i class="fas fa-thumbtack"></i> <span>Tareas Fijas</span>
+            </li>
+        `;
+    }
+
+    if (modulesVisibility['tareas-programadas']) {
+        navList.innerHTML += `
+            <li class="nav-item ${currentModule === 'tareas-programadas' ? 'active' : ''}" id="btn-tareas-programadas">
+                <i class="fas fa-calendar-alt"></i> <span>Programadas</span>
+            </li>
+        `;
+    }
+
+    if (modulesVisibility['historico']) {
+        navList.innerHTML += `
+            <li class="nav-item ${currentModule === 'historico' ? 'active' : ''}" id="btn-historico">
+                <i class="fas fa-history"></i> <span>Histórico</span>
+            </li>
+        `;
+    }
+
+    navList.innerHTML += `
+        <li class="nav-item ${currentModule === 'modulos-config' ? 'active' : ''}" id="btn-modulos-config">
+            <i class="fas fa-puzzle-piece"></i> <span>Módulos</span>
+        </li>
+    `;
+
+    // Re-vincular eventos
+    navList.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const id = item.id.replace('btn-', '');
+            loadModule(id);
+        });
+    });
+}
+
+// --- CARGADOR DE VISTAS (CENTRO) ---
+function loadModule(moduleId) {
+    currentModule = moduleId;
+    const viewport = document.getElementById('module-viewport');
+    renderSidebar();
+
+    switch(moduleId) {
+        case 'dashboard':
+            renderDashboard(viewport);
             break;
-        case 'Clientes':
-            mainView.innerHTML = `
-                <div class="view-header">
-                    <h2>Clientes</h2>
-                    <div class="header-actions">
-                        <button id="btn-export" class="btn btn-outline btn-sm">
-                            <i data-lucide="download"></i>
-                            <span>Exportar a Excel</span>
-                        </button>
+        case 'tareas-fijas':
+            renderTareasFijas(viewport);
+            break;
+        case 'tareas-programadas':
+            renderTareasProgramadas(viewport);
+            break;
+        case 'historico':
+            renderHistorico(viewport);
+            break;
+        case 'modulos-config':
+            renderModulosConfig(viewport);
+            break;
+    }
+}
+
+// --- MÓDULO: TAREAS FIJAS ---
+function renderTareasFijas(container) {
+    container.innerHTML = `
+        <div class="module-view">
+            <h2><i class="fas fa-thumbtack"></i> Configurar Tareas Fijas</h2>
+            <p class="muted">Estas tareas aparecerán todos los días en tu panel.</p>
+            
+            <form id="form-fixed-task" class="mt-1">
+                <div class="input-group">
+                    <input type="text" id="fixed-task-name" placeholder="Nombre de la tarea fija..." required>
+                    <button type="submit" class="btn-primary">Añadir Tarea</button>
+                </div>
+            </form>
+
+            <div class="list-container mt-2">
+                <h3>Tareas Actuales (Ordenables)</h3>
+                <div id="fixed-tasks-list" class="dynamic-list"></div>
+            </div>
+        </div>
+    `;
+
+    const form = document.getElementById('form-fixed-task');
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('fixed-task-name').value;
+        await addDoc(collection(db, "tareas_fijas"), {
+            name: name,
+            order: Date.now(),
+            createdAt: serverTimestamp()
+        });
+        form.reset();
+    };
+
+    // Escuchar cambios en tiempo real
+    onSnapshot(query(collection(db, "tareas_fijas"), orderBy("order", "asc")), (snap) => {
+        const list = document.getElementById('fixed-tasks-list');
+        if (!list) return;
+        list.innerHTML = '';
+        snap.forEach(docSnap => {
+            const task = docSnap.data();
+            list.innerHTML += `
+                <div class="list-item">
+                    <span>${task.name}</span>
+                    <button onclick="deleteFixedTask('${docSnap.id}')" class="btn-delete"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+        });
+    });
+}
+
+window.deleteFixedTask = async (id) => {
+    if(confirm("¿Eliminar esta tarea fija? Dejará de aparecer a diario.")) {
+        await deleteDoc(doc(db, "tareas_fijas", id));
+    }
+};
+
+// --- MÓDULO: TAREAS PROGRAMADAS ---
+function renderTareasProgramadas(container) {
+    container.innerHTML = `
+        <div class="module-view">
+            <h2><i class="fas fa-calendar-alt"></i> Programar Nuevas Tareas</h2>
+            
+            <form id="form-scheduled-task" class="mt-1 grid-form">
+                <input type="text" id="sch-name" placeholder="¿Qué hay que hacer?" required>
+                <div class="flex-row">
+                    <input type="date" id="sch-date" required>
+                    <input type="time" id="sch-time" required>
+                </div>
+                <button type="submit" class="btn-primary">Programar Tarea</button>
+            </form>
+
+            <div class="list-container mt-2">
+                <h3>Próximas Tareas Programadas</h3>
+                <div id="scheduled-tasks-list" class="dynamic-list"></div>
+            </div>
+        </div>
+    `;
+
+    const form = document.getElementById('form-scheduled-task');
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        await addDoc(collection(db, "tareas_programadas"), {
+            name: document.getElementById('sch-name').value,
+            date: document.getElementById('sch-date').value,
+            time: document.getElementById('sch-time').value,
+            status: 'pending',
+            createdAt: serverTimestamp()
+        });
+        form.reset();
+    };
+
+    onSnapshot(query(collection(db, "tareas_programadas"), where("status", "==", "pending"), orderBy("date", "asc")), (snap) => {
+        const list = document.getElementById('scheduled-tasks-list');
+        if (!list) return;
+        list.innerHTML = '';
+        snap.forEach(docSnap => {
+            const t = docSnap.data();
+            list.innerHTML += `
+                <div class="list-item">
+                    <div>
+                        <strong>${t.name}</strong><br>
+                        <small>${t.date} a las ${t.time}</small>
                     </div>
                 </div>
-                <div id="clients-list" class="clients-table-container">Cargando lista...</div>`;
-            document.getElementById('btn-export').onclick = exportClientsToExcel;
-            loadClientsList();
-            break;
-        case 'Landing':
-            mainView.style.alignItems = 'center';
-            mainView.style.justifyContent = 'center';
-            mainView.innerHTML = `<div class="empty-state"><i data-lucide="shield-check"></i><h2>Bienvenido</h2><p>Inicia sesión como empresa.</p></div>`;
-            break;
-        default:
-            mainView.innerHTML = `<h2>${viewName}</h2>`;
-    }
-    if (window.lucide) lucide.createIcons();
-}
-
-// --- GESTIÓN DE MODALES ---
-function openModal(title, contentHTML) {
-    modalTitle.innerText = title;
-    modalContent.innerHTML = contentHTML;
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-    if (window.lucide) lucide.createIcons();
-}
-
-function closeModal() {
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-}
-
-document.querySelector('.close-modal').addEventListener('click', closeModal);
-window.onclick = (e) => { if (e.target == modal) closeModal(); };
-
-// --- AUTENTICACIÓN ---
-function renderAuthForm(mode = 'login') {
-    let title = 'Acceso Empresa';
-    let authHTML = `
-        <form id="auth-form">
-            <div class="form-group"><label class="form-label">Email</label><input type="email" id="email" class="form-control" required></div>
-            ${mode === 'recover' ? '' : '<div class="form-group"><label class="form-label">Contraseña</label><input type="password" id="password" class="form-control" required></div>'}
-            <button type="submit" class="btn btn-primary" style="width:100%">${mode==='login'?'Entrar':mode==='signup'?'Registrar':'Recuperar'}</button>
-            <div style="text-align:center; margin-top:15px; font-size:13px;">
-                ${mode==='login'?'<a href="#" id="go-recover">¿Has olvidado tu clave?</a><br><br>¿Nuevo? <a href="#" id="go-signup">Crea cuenta</a>' : '<a href="#" id="go-login">Volver al login</a>'}
-            </div>
-        </form>`;
-    
-    openModal(title, authHTML);
-    document.getElementById('go-signup')?.addEventListener('click', () => renderAuthForm('signup'));
-    document.getElementById('go-login')?.addEventListener('click', () => renderAuthForm('login'));
-    document.getElementById('go-recover')?.addEventListener('click', () => renderAuthForm('recover'));
-
-    document.getElementById('auth-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const pass = document.getElementById('password')?.value;
-        try {
-            if (mode==='login') await signInWithEmailAndPassword(auth, email, pass);
-            else if (mode==='signup') await createUserWithEmailAndPassword(auth, email, pass);
-            else { await sendPasswordResetEmail(auth, email); alert("Email enviado"); }
-            closeModal();
-        } catch (err) { alert("Error: " + err.message); }
-    });
-}
-
-loginBtn.addEventListener('click', () => {
-    if (auth.currentUser) { if (confirm("¿Cerrar sesión?")) signOut(auth).then(() => location.reload()); }
-    else renderAuthForm('login');
-});
-
-// --- CONFIGURACIÓN MODULAR ---
-settingsBtn.addEventListener('click', () => {
-    if (!auth.currentUser) return renderAuthForm('login');
-    renderSettings('Equipo');
-});
-
-function renderSettings(activeTab) {
-    openModal('Configuración', `
-        <div class="settings-container">
-            <nav class="settings-nav">
-                <div class="settings-tab ${activeTab==='Equipo'?'active':''}" data-tab="Equipo">Equipo</div>
-                <div class="settings-tab ${activeTab==='Clientes'?'active':''}" data-tab="Clientes">Clientes</div>
-            </nav>
-            <div class="tab-content" id="settings-tab-content"></div>
-        </div>`);
-    document.querySelectorAll('.settings-tab').forEach(tab => {
-        tab.addEventListener('click', () => renderSettings(tab.dataset.tab));
-    });
-    renderSettingsTab(activeTab);
-}
-
-function renderSettingsTab(tab) {
-    const container = document.getElementById('settings-tab-content');
-    if (tab === 'Equipo') {
-        container.innerHTML = `
-            <h4>Gestión de Equipo</h4>
-            <form id="comm-form" style="margin-top:10px">
-                <input type="text" id="comm-name" class="form-control" placeholder="Nombre" required style="margin-bottom:10px">
-                <div style="display:grid; grid-template-columns: 1fr 100px; gap:10px; margin-bottom:10px">
-                    <input type="email" id="comm-email" class="form-control" placeholder="Email" required>
-                    <input type="text" id="comm-code" class="form-control" placeholder="CÓDIGO" required>
-                </div>
-                <button type="submit" class="btn btn-primary btn-sm">Dar de Alta</button>
-            </form>
-            <div id="team-list" style="margin-top:20px">Cargando...</div>`;
-        loadCommercials();
-        document.getElementById('comm-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            const originalHtml = btn.innerHTML;
-            
-            try {
-                btn.disabled = true;
-                btn.innerHTML = `<div class="spinner"></div><span>Guardando...</span>`;
-                
-                await addDoc(collection(db, "commercials"), {
-                    companyId: auth.currentUser.uid,
-                    name: document.getElementById('comm-name').value,
-                    email: document.getElementById('comm-email').value,
-                    code: document.getElementById('comm-code').value.toUpperCase(),
-                    createdAt: new Date().toISOString()
-                });
-                
-                showToast("Comercial creado con éxito", "success");
-                e.target.reset();
-                loadCommercials();
-            } catch (err) {
-                showToast("Error al crear comercial: " + err.message, "error");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
-            }
+            `;
         });
-    } else if (tab === 'Clientes') {
-        container.innerHTML = `
-            <h4>Importar Clientes</h4>
-            <input type="file" id="file-in" accept=".csv,.xlsx" style="margin-top:10px">
-            <div id="mapping-area" style="display:none; margin-top:20px">
-                <h5>Mapeo de Columnas</h5>
-                <table class="mapping-table"><thead><tr><th>Original</th><th>App</th><th>Visible</th></tr></thead><tbody id="map-body"></tbody></table>
-                <button id="save-map" class="btn btn-primary btn-sm" style="margin-top:10px">Guardar y Subir</button>
-            </div>`;
-        document.getElementById('file-in').addEventListener('change', handleFile);
-    }
-}
-
-async function loadCommercials() {
-    const list = document.getElementById('team-list');
-    const q = query(collection(db, "commercials"), where("companyId", "==", auth.currentUser.uid));
-    const snap = await getDocs(q);
-    list.innerHTML = snap.empty ? 'No hay comerciales.' : '';
-    snap.forEach(doc => {
-        const d = doc.data();
-        list.innerHTML += `<div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between">
-            <span>${d.name} (${d.email})</span>
-            <span class="badge" style="color:var(--accent); font-weight:700">${d.code}</span>
-        </div>`;
     });
 }
 
-let tempFileData = [];
-function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-        const bstr = evt.target.result;
-        let data = [];
-        if (file.name.endsWith('.csv')) {
-            Papa.parse(bstr, { header: true, complete: (res) => { data = res.data; showMapping(res.meta.fields, data); }});
+// --- COLUMNA DERECHA (LÓGICA COMBINADA) ---
+function loadDailyTasks() {
+    const taskContainer = document.getElementById('task-list-container');
+    const today = new Date().toISOString().split('T')[0];
+
+    // Escuchar tareas fijas
+    onSnapshot(query(collection(db, "tareas_fijas"), orderBy("order", "asc")), (snapFijas) => {
+        // Escuchar tareas programadas de hoy
+        onSnapshot(query(collection(db, "tareas_programadas"), where("status", "==", "pending")), (snapProg) => {
+            taskContainer.innerHTML = '';
+            
+            // Sección Tareas Fijas
+            const fixedSection = document.createElement('div');
+            fixedSection.innerHTML = `<div class="date-divider">TAREAS DIARIAS (FIJAS)</div>`;
+            snapFijas.forEach(docSnap => {
+                const t = docSnap.data();
+                const el = createInteractiveTask(t.name, 'fixed', docSnap.id);
+                fixedSection.appendChild(el);
+            });
+            taskContainer.appendChild(fixedSection);
+
+            // Sección Programadas (incluyendo vencidas)
+            const progSection = document.createElement('div');
+            progSection.innerHTML = `<div class="date-divider">PROGRAMADAS PARA HOY / PENDIENTES</div>`;
+            
+            snapProg.forEach(docSnap => {
+                const t = docSnap.data();
+                const isOverdue = new Date(`${t.date} ${t.time}`) < new Date();
+                const el = createInteractiveTask(t.name, 'scheduled', docSnap.id, t.date, t.time, isOverdue);
+                progSection.appendChild(el);
+            });
+            taskContainer.appendChild(progSection);
+        });
+    });
+}
+
+function createInteractiveTask(name, type, id, date = '', time = '', isOverdue = false) {
+    const div = document.createElement('div');
+    div.className = `task-item ${isOverdue ? 'high' : 'medium'}`;
+    div.style.cursor = 'pointer';
+    div.innerHTML = `
+        <div class="task-time">${time || 'Diaria'}</div>
+        <div class="task-info">
+            <h4>${name}</h4>
+            <p>${date || 'Cada día'}</p>
+        </div>
+    `;
+
+    div.onclick = () => handleTaskClick(name, type, id);
+    return div;
+}
+
+async function handleTaskClick(name, type, id) {
+    const choice = confirm(`¿Has concluido "${name}"?\n(Aceptar: Concluir | Cancelar: Programar/Cerrar)`);
+    
+    if (choice) {
+        const obs = prompt("Anotaciones / Observaciones:");
+        await addDoc(collection(db, "historico"), {
+            name: name,
+            type: type,
+            date: new Date().toISOString().split('T')[0],
+            time: new Date().toLocaleTimeString(),
+            observations: obs || "",
+            timestamp: serverTimestamp()
+        });
+
+        if (type === 'scheduled') {
+            await updateDoc(doc(db, "tareas_programadas", id), { status: 'completed' });
+        }
+        alert("Tarea registrada en histórico.");
+    } else {
+        const reschedule = confirm("¿Quieres programarla para otro día/hora?");
+        if (reschedule && type === 'fixed') {
+             // Si es fija, creamos una programada puntual para el futuro
+             const newDate = prompt("Fecha (AAAA-MM-DD):", new Date().toISOString().split('T')[0]);
+             const newTime = prompt("Hora (HH:MM):", "09:00");
+             if (newDate && newTime) {
+                 await addDoc(collection(db, "tareas_programadas"), {
+                     name: `${name} (Rescheduling)`,
+                     date: newDate,
+                     time: newTime,
+                     status: 'pending',
+                     createdAt: serverTimestamp()
+                 });
+             }
+        }
+    }
+}
+
+// --- MÓDULO: HISTÓRICO ---
+function renderHistorico(container) {
+    container.innerHTML = `
+        <div class="module-view">
+            <h2><i class="fas fa-history"></i> Historial de Tareas Concluidas</h2>
+            <div id="history-list" class="dynamic-list mt-2"></div>
+        </div>
+    `;
+
+    onSnapshot(query(collection(db, "historico"), orderBy("timestamp", "desc")), (snap) => {
+        const list = document.getElementById('history-list');
+        if (!list) return;
+        list.innerHTML = '';
+        snap.forEach(docSnap => {
+            const h = docSnap.data();
+            list.innerHTML += `
+                <div class="list-item history-item">
+                    <div style="flex-grow: 1;">
+                        <strong>${h.name}</strong> - <small>${h.date} ${h.time}</small>
+                        <p class="muted">${h.observations || 'Sin anotaciones'}</p>
+                    </div>
+                </div>
+            `;
+        });
+    });
+}
+
+// --- MÓDULO: CONFIGURACIÓN DE MÓDULOS ---
+function renderModulosConfig(container) {
+    container.innerHTML = `
+        <div class="module-view">
+            <h2><i class="fas fa-puzzle-piece"></i> Configurar Panel de Control</h2>
+            <p>Selecciona qué botones quieres ver en el menú lateral.</p>
+            <div class="config-grid mt-2">
+                <label class="config-item">
+                    <input type="checkbox" ${modulesVisibility['tareas-fijas'] ? 'checked' : ''} onchange="toggleModule('tareas-fijas')">
+                    Tareas Fijas
+                </label>
+                <label class="config-item">
+                    <input type="checkbox" ${modulesVisibility['tareas-programadas'] ? 'checked' : ''} onchange="toggleModule('tareas-programadas')">
+                    Tareas Programadas
+                </label>
+                <label class="config-item">
+                    <input type="checkbox" ${modulesVisibility['historico'] ? 'checked' : ''} onchange="toggleModule('historico')">
+                    Histórico
+                </label>
+            </div>
+        </div>
+    `;
+}
+
+window.toggleModule = async (moduleId) => {
+    modulesVisibility[moduleId] = !modulesVisibility[moduleId];
+    // Guardar en Firebase para persistencia
+    await updateDoc(doc(db, "config", "sidebar"), modulesVisibility).catch(async () => {
+        // Si no existe el doc, lo creamos (esto es simplificado)
+        console.log("Config doc init needed");
+    });
+    renderSidebar();
+};
+
+async function loadModulesConfig() {
+    // Aquí cargaríamos de Firebase. Por ahora usamos el estado local inicial.
+}
+
+// --- LÓGICA DE AUTENTICACIÓN ---
+function setupAuthUI() {
+    const form = document.getElementById('auth-form');
+    const btnSwitchRegister = document.getElementById('btn-switch-register');
+    const btnSwitchForgot = document.getElementById('btn-switch-forgot');
+    const authTitle = document.getElementById('auth-title');
+    const authSubtitle = document.getElementById('auth-subtitle');
+    const passGroup = document.getElementById('pass-group');
+    const btnSubmit = document.getElementById('btn-auth-submit');
+
+    btnSwitchRegister.onclick = () => {
+        if (authMode !== 'register') {
+            authMode = 'register';
+            authTitle.innerText = 'Crea tu Cuenta';
+            authSubtitle.innerText = 'Únete a CRM PRO hoy mismo';
+            btnSubmit.innerText = 'Registrarse';
+            btnSwitchRegister.innerText = '¿Ya tienes cuenta? Inicia sesión';
+            passGroup.classList.remove('hidden');
         } else {
-            const wb = XLSX.read(bstr, {type:'binary'});
-            data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-            showMapping(Object.keys(data[0]), data);
+            setLoginMode();
         }
     };
-    reader.readAsBinaryString(file);
-}
 
-function showMapping(headers, data) {
-    tempFileData = data;
-    document.getElementById('mapping-area').style.display='block';
-    const body = document.getElementById('map-body');
-    body.innerHTML = '';
-    headers.forEach(h => {
-        body.innerHTML += `<tr>
-            <td>${h}</td>
-            <td><input type="text" class="form-control map-custom" value="${h}" data-orig="${h}"></td>
-            <td><input type="checkbox" class="map-vis" checked></td>
-        </tr>`;
-    });
-    document.getElementById('save-map').onclick = () => uploadData();
-}
+    btnSwitchForgot.onclick = () => {
+        authMode = 'forgot';
+        authTitle.innerText = 'Recuperar Contraseña';
+        authSubtitle.innerText = 'Te enviaremos un correo para restablecerla';
+        btnSubmit.innerText = 'Enviar Correo';
+        passGroup.classList.add('hidden');
+        btnSwitchRegister.innerText = 'Volver al Login';
+    };
 
-async function uploadData() {
-    const mapping = {};
-    document.querySelectorAll('.map-custom').forEach((el, i) => {
-        const vis = document.querySelectorAll('.map-vis')[i].checked;
-        mapping[el.dataset.orig] = { name: el.value, vis };
-    });
+    function setLoginMode() {
+        authMode = 'login';
+        authTitle.innerText = 'Bienvenido a CRM PRO';
+        authSubtitle.innerText = 'Ingresa tus credenciales para continuar';
+        btnSubmit.innerText = 'Iniciar Sesión';
+        btnSwitchRegister.innerText = '¿No tienes cuenta? Regístrate';
+        passGroup.classList.remove('hidden');
+    }
 
-    const btn = document.getElementById('save-map');
-    const originalHtml = btn.innerHTML;
-    
-    try {
-        btn.disabled = true;
-        btn.innerHTML = `<div class="spinner"></div><span>Subiendo...</span>`;
-        
-        let count = 0;
-        for (const row of tempFileData) {
-            const final = { companyId: auth.currentUser.uid };
-            let hasData = false;
-            Object.keys(row).forEach(k => {
-                if (mapping[k] && mapping[k].vis) {
-                    final[mapping[k].name] = row[k];
-                    hasData = true;
-                }
-            });
-            if (hasData) {
-                await addDoc(collection(db, "clients"), final);
-                count++;
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+
+        try {
+            if (authMode === 'login') {
+                await signInWithEmailAndPassword(auth, email, password);
+            } else if (authMode === 'register') {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } else if (authMode === 'forgot') {
+                await sendPasswordResetEmail(auth, email);
+                alert("Correo de recuperación enviado.");
+                setLoginMode();
             }
+        } catch (error) {
+            alert("Error: " + error.message);
         }
-        showToast(`Se han subido ${count} clientes correctamente`, "success");
-        closeModal();
-        if (pageTitle.innerText === 'Clientes') loadClientsList();
-    } catch (err) {
-        showToast("Error al subir datos: " + err.message, "error");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-    }
+    };
 }
 
-// --- CLIENTS LIST ---
-async function loadClientsList() {
-    const list = document.getElementById('clients-list');
-    const q = query(collection(db, "clients"), where("companyId", "==", auth.currentUser.uid));
-    const snap = await getDocs(q);
-    if (snap.empty) { list.innerHTML = 'No hay datos.'; return; }
-    let html = '<table class="mapping-table"><thead><tr>';
-    const firstDoc = snap.docs[0].data();
-    Object.keys(firstDoc).forEach(k => { if(k!=='companyId') html += `<th>${k}</th>`; });
-    html += '</tr></thead><tbody>';
-    snap.forEach(doc => {
-        const d = doc.data();
-        html += '<tr>';
-        Object.keys(firstDoc).forEach(k => { if(k!=='companyId') html += `<td>${d[k] || ''}</td>`; });
-        html += '</tr>';
-    });
-    list.innerHTML = html + '</tbody></table>';
+// Botón de Cerrar Sesión (opcional pero recomendado)
+document.getElementById('user-profile').onclick = () => {
+    if(confirm("¿Cerrar sesión?")) {
+        signOut(auth);
+    }
+};
+
+function setupEventListeners() {
+    // Configuración adicional si fuera necesaria
 }
 
-// --- EXPORTAR A EXCEL ---
-async function exportClientsToExcel() {
-    const btn = document.getElementById('btn-export');
-    const originalHtml = btn.innerHTML;
-    
-    try {
-        btn.disabled = true;
-        btn.innerHTML = `<div class="spinner"></div><span>Exportando...</span>`;
-        
-        const q = query(collection(db, "clients"), where("companyId", "==", auth.currentUser.uid));
-        const snap = await getDocs(q);
-        
-        if (snap.empty) {
-            showToast("No hay clientes para exportar", "info");
-            return;
-        }
-        
-        const data = [];
-        snap.forEach(doc => {
-            const d = doc.data();
-            delete d.companyId; // No exportar el ID de empresa
-            data.push(d);
-        });
-        
-        const worksheet = XLSX.utils.json_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Clientes");
-        
-        // Generar nombre de archivo con fecha
-        const date = new Date().toISOString().split('T')[0];
-        XLSX.writeFile(workbook, `Clientes_CRM_${date}.xlsx`);
-        
-        showToast("Archivo Excel generado con éxito", "success");
-    } catch (err) {
-        showToast("Error al exportar: " + err.message, "error");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-    }
+function renderDashboard(container) {
+    container.innerHTML = `
+        <div class="view-placeholder">
+            <h2>Panel de Resumen</h2>
+            <p>Bienvenido a tu CRM. Usa el menú lateral para gestionar tus tareas.</p>
+        </div>
+    `;
 }
-
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        document.querySelector('.user-name').innerText = user.email.split('@')[0];
-        renderView('Panel');
-    } else {
-        document.querySelector('.user-name').innerText = "Iniciar Sesión";
-        renderView('Landing');
-    }
-});
