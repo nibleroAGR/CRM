@@ -18,11 +18,12 @@ const auth = getAuth(app);
 
 // --- ESTADO GLOBAL ---
 let currentModule = 'dashboard';
-let authMode = 'login'; // 'login', 'register', 'forgot'
+let authMode = 'login';
 let modulesVisibility = {
     'tareas-fijas': true,
     'tareas-programadas': true,
-    'historico': true
+    'historico': true,
+    'enlaces': true
 };
 
 // --- INICIALIZACIÓN ---
@@ -42,6 +43,7 @@ function initAuthListener() {
             appContainer.classList.remove('hidden');
             document.querySelector('.user-name').innerText = user.email.split('@')[0];
             initApp();
+            loadBookmarks(); // Cargar marcadores al iniciar
         } else {
             authScreen.classList.remove('hidden');
             appContainer.classList.add('hidden');
@@ -89,6 +91,14 @@ function renderSidebar() {
         `;
     }
 
+    if (modulesVisibility['enlaces']) {
+        navList.innerHTML += `
+            <li class="nav-item ${currentModule === 'enlaces' ? 'active' : ''}" id="btn-enlaces">
+                <i class="fas fa-link"></i> <span>Enlaces</span>
+            </li>
+        `;
+    }
+
     navList.innerHTML += `
         <li class="nav-item ${currentModule === 'modulos-config' ? 'active' : ''}" id="btn-modulos-config">
             <i class="fas fa-puzzle-piece"></i> <span>Módulos</span>
@@ -123,6 +133,9 @@ function loadModule(moduleId) {
         case 'historico':
             renderHistorico(viewport);
             break;
+        case 'enlaces':
+            renderEnlaces(viewport);
+            break;
         case 'modulos-config':
             renderModulosConfig(viewport);
             break;
@@ -153,13 +166,21 @@ function renderTareasFijas(container) {
     const form = document.getElementById('form-fixed-task');
     form.onsubmit = async (e) => {
         e.preventDefault();
-        const name = document.getElementById('fixed-task-name').value;
-        await addDoc(collection(db, "tareas_fijas"), {
-            name: name,
-            order: Date.now(),
-            createdAt: serverTimestamp()
-        });
-        form.reset();
+        try {
+            const name = document.getElementById('fixed-task-name').value;
+            console.log("Intentando añadir tarea fija:", name);
+            await addDoc(collection(db, "tareas_fijas"), {
+                name: name,
+                order: Date.now(),
+                createdAt: serverTimestamp(),
+                userId: auth.currentUser.uid
+            });
+            form.reset();
+            alert("Tarea fija añadida correctamente.");
+        } catch (error) {
+            console.error("Error al añadir tarea fija:", error);
+            alert("Error de Firestore: " + error.message);
+        }
     };
 
     // Escuchar cambios en tiempo real
@@ -210,14 +231,25 @@ function renderTareasProgramadas(container) {
     const form = document.getElementById('form-scheduled-task');
     form.onsubmit = async (e) => {
         e.preventDefault();
-        await addDoc(collection(db, "tareas_programadas"), {
-            name: document.getElementById('sch-name').value,
-            date: document.getElementById('sch-date').value,
-            time: document.getElementById('sch-time').value,
-            status: 'pending',
-            createdAt: serverTimestamp()
-        });
-        form.reset();
+        try {
+            const name = document.getElementById('sch-name').value;
+            const date = document.getElementById('sch-date').value;
+            const time = document.getElementById('sch-time').value;
+
+            await addDoc(collection(db, "tareas_programadas"), {
+                name: name,
+                date: date,
+                time: time,
+                status: 'pending',
+                createdAt: serverTimestamp(),
+                userId: auth.currentUser.uid
+            });
+            form.reset();
+            alert("Tarea programada con éxito.");
+        } catch (error) {
+            console.error("Error al programar tarea:", error);
+            alert("Error de Firestore: " + error.message);
+        }
     };
 
     onSnapshot(query(collection(db, "tareas_programadas"), where("status", "==", "pending"), orderBy("date", "asc")), (snap) => {
@@ -327,7 +359,80 @@ async function handleTaskClick(name, type, id) {
     }
 }
 
-// --- MÓDULO: HISTÓRICO ---
+// --- MÓDULO: ENLACES ---
+function renderEnlaces(container) {
+    container.innerHTML = `
+        <div class="module-view">
+            <h2><i class="fas fa-link"></i> Gestionar Enlaces (Marcadores)</h2>
+            
+            <form id="form-link" class="mt-1 flex-row">
+                <input type="text" id="link-name" placeholder="Nombre (ej: Google)" required>
+                <input type="url" id="link-url" placeholder="URL (https://...)" required>
+                <button type="submit" class="btn-primary">Añadir</button>
+            </form>
+
+            <div class="list-container mt-2">
+                <h3>Tus Enlaces</h3>
+                <div id="links-list" class="dynamic-list"></div>
+            </div>
+        </div>
+    `;
+
+    const form = document.getElementById('form-link');
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const name = document.getElementById('link-name').value;
+            const url = document.getElementById('link-url').value;
+            await addDoc(collection(db, "enlaces"), {
+                name: name,
+                url: url,
+                createdAt: serverTimestamp(),
+                userId: auth.currentUser.uid
+            });
+            form.reset();
+        } catch (error) {
+            alert("Error al guardar enlace: " + error.message);
+        }
+    };
+
+    onSnapshot(query(collection(db, "enlaces"), orderBy("createdAt", "desc")), (snap) => {
+        const list = document.getElementById('links-list');
+        if (!list) return;
+        list.innerHTML = '';
+        snap.forEach(docSnap => {
+            const l = docSnap.data();
+            list.innerHTML += `
+                <div class="list-item">
+                    <span><strong>${l.name}</strong> - <small>${l.url}</small></span>
+                    <button onclick="deleteLink('${docSnap.id}')" class="btn-delete"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+        });
+    });
+}
+
+window.deleteLink = async (id) => {
+    if(confirm("¿Eliminar este enlace?")) {
+        await deleteDoc(doc(db, "enlaces", id));
+    }
+};
+
+function loadBookmarks() {
+    const bar = document.getElementById('bookmarks-bar');
+    onSnapshot(query(collection(db, "enlaces"), orderBy("createdAt", "asc")), (snap) => {
+        bar.innerHTML = '';
+        snap.forEach(docSnap => {
+            const l = docSnap.data();
+            const a = document.createElement('a');
+            a.href = l.url;
+            a.target = "_blank";
+            a.className = "bookmark-item";
+            a.innerHTML = `<i class="fas fa-external-link-alt"></i> ${l.name}`;
+            bar.appendChild(a);
+        });
+    });
+}
 function renderHistorico(container) {
     container.innerHTML = `
         <div class="module-view">
@@ -373,6 +478,10 @@ function renderModulosConfig(container) {
                     <input type="checkbox" ${modulesVisibility['historico'] ? 'checked' : ''} onchange="toggleModule('historico')">
                     Histórico
                 </label>
+                <label class="config-item">
+                    <input type="checkbox" ${modulesVisibility['enlaces'] ? 'checked' : ''} onchange="toggleModule('enlaces')">
+                    Enlaces
+                </label>
             </div>
         </div>
     `;
@@ -397,41 +506,46 @@ function setupAuthUI() {
     const form = document.getElementById('auth-form');
     const btnSwitchRegister = document.getElementById('btn-switch-register');
     const btnSwitchForgot = document.getElementById('btn-switch-forgot');
+    
     const authTitle = document.getElementById('auth-title');
     const authSubtitle = document.getElementById('auth-subtitle');
     const passGroup = document.getElementById('pass-group');
     const btnSubmit = document.getElementById('btn-auth-submit');
 
-    btnSwitchRegister.onclick = () => {
-        if (authMode !== 'register') {
-            authMode = 'register';
+    const setMode = (mode) => {
+        authMode = mode;
+        if (mode === 'register') {
             authTitle.innerText = 'Crea tu Cuenta';
             authSubtitle.innerText = 'Únete a CRM PRO hoy mismo';
             btnSubmit.innerText = 'Registrarse';
             btnSwitchRegister.innerText = '¿Ya tienes cuenta? Inicia sesión';
+            btnSwitchForgot.classList.remove('hidden');
             passGroup.classList.remove('hidden');
-        } else {
-            setLoginMode();
+        } else if (mode === 'login') {
+            authTitle.innerText = 'Bienvenido a CRM PRO';
+            authSubtitle.innerText = 'Ingresa tus credenciales para continuar';
+            btnSubmit.innerText = 'Iniciar Sesión';
+            btnSwitchRegister.innerText = '¿No tienes cuenta? Regístrate';
+            btnSwitchForgot.classList.remove('hidden');
+            passGroup.classList.remove('hidden');
+        } else if (mode === 'forgot') {
+            authTitle.innerText = 'Recuperar Contraseña';
+            authSubtitle.innerText = 'Te enviaremos un correo para restablecerla';
+            btnSubmit.innerText = 'Enviar Correo de Recuperación';
+            btnSwitchRegister.innerText = 'Volver al Inicio de Sesión';
+            btnSwitchForgot.classList.add('hidden');
+            passGroup.classList.add('hidden');
         }
     };
 
-    btnSwitchForgot.onclick = () => {
-        authMode = 'forgot';
-        authTitle.innerText = 'Recuperar Contraseña';
-        authSubtitle.innerText = 'Te enviaremos un correo para restablecerla';
-        btnSubmit.innerText = 'Enviar Correo';
-        passGroup.classList.add('hidden');
-        btnSwitchRegister.innerText = 'Volver al Login';
+    btnSwitchRegister.onclick = () => {
+        if (authMode === 'login') setMode('register');
+        else setMode('login');
     };
 
-    function setLoginMode() {
-        authMode = 'login';
-        authTitle.innerText = 'Bienvenido a CRM PRO';
-        authSubtitle.innerText = 'Ingresa tus credenciales para continuar';
-        btnSubmit.innerText = 'Iniciar Sesión';
-        btnSwitchRegister.innerText = '¿No tienes cuenta? Regístrate';
-        passGroup.classList.remove('hidden');
-    }
+    btnSwitchForgot.onclick = () => {
+        setMode('forgot');
+    };
 
     form.onsubmit = async (e) => {
         e.preventDefault();
@@ -441,15 +555,23 @@ function setupAuthUI() {
         try {
             if (authMode === 'login') {
                 await signInWithEmailAndPassword(auth, email, password);
+                console.log("Login exitoso");
             } else if (authMode === 'register') {
                 await createUserWithEmailAndPassword(auth, email, password);
+                alert("Cuenta creada con éxito");
             } else if (authMode === 'forgot') {
                 await sendPasswordResetEmail(auth, email);
-                alert("Correo de recuperación enviado.");
-                setLoginMode();
+                alert("Si el correo existe, recibirás un enlace para restablecer tu contraseña.");
+                setMode('login');
             }
         } catch (error) {
-            alert("Error: " + error.message);
+            console.error("Error de auth:", error.code);
+            let mensaje = "Ocurrió un error. Revisa tus datos.";
+            if (error.code === 'auth/email-already-in-use') mensaje = "Este correo ya está registrado.";
+            if (error.code === 'auth/wrong-password') mensaje = "Contraseña incorrecta.";
+            if (error.code === 'auth/user-not-found') mensaje = "Usuario no encontrado.";
+            if (error.code === 'auth/weak-password') mensaje = "La contraseña es muy débil (mín. 6 caracteres).";
+            alert(mensaje);
         }
     };
 }

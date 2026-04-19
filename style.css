@@ -218,6 +218,45 @@ body {
     color: var(--text-main);
 }
 
+/* BARRA DE MARCADORES (Chrome Style) */
+#bookmarks-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    min-height: 40px;
+    align-items: center;
+}
+
+.bookmark-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 100px;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.bookmark-item i {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.bookmark-item:hover {
+    background-color: #f1f5f9;
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
 #module-viewport {
     background-color: white;
     border-radius: var(--radius);
