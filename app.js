@@ -421,14 +421,16 @@ function renderizarModulosCombinados() {
         tarjeta.className = 'tarjeta-modulo';
         let botonBasura = mod.isFixed ? '' : `<button class="btn-icon" onclick="borrarModulo('${mod.id}')"><i class="fa-solid fa-trash"></i></button>`;
         tarjeta.innerHTML = `
-            <i class="${mod.icon}"></i>
-            <h4 class="mb-10">${mod.name}</h4>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+            <div class="tarjeta-modulo-info">
+                <i class="${mod.icon}"></i>
+                <h4>${mod.name}</h4>
+            </div>
+            <div class="tarjeta-modulo-acciones">
+                ${botonBasura}
                 <label class="switch">
                     <input type="checkbox" ${isActivo ? 'checked' : ''} onchange="toggleModuloGral('${mod.id}', this.checked, ${mod.isFixed})">
                     <span class="slider"></span>
                 </label>
-                ${botonBasura}
             </div>
         `;
         gridAjustes.appendChild(tarjeta);
