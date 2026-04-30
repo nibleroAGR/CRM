@@ -72,45 +72,247 @@
             
             <!-- Left Column: Navigation (15%) -->
             <aside class="col-left glass-panel">
-                <nav class="side-nav">
+                <nav class="side-nav" id="nav-fixed-modules">
                     <ul>
-                        <li class="active"><a href="#"><i class="fa-solid fa-house"></i> Inicio</a></li>
-                        <li><a href="#"><i class="fa-solid fa-users"></i> Clientes</a></li>
-                        <li><a href="#"><i class="fa-solid fa-calendar-check"></i> Tareas</a></li>
-                        <li><a href="#"><i class="fa-solid fa-chart-line"></i> Reportes</a></li>
-                        <li><a href="#"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                        <!-- Fijos -->
+                        <li class="active" data-target="view-tareas"><a href="#"><i class="fa-solid fa-list-check"></i> Tareas</a></li>
+                        <li data-target="view-programadas"><a href="#"><i class="fa-regular fa-calendar-days"></i> Programadas</a></li>
+                        <li data-target="view-historial"><a href="#"><i class="fa-solid fa-clock-rotate-left"></i> Historial</a></li>
+                        <li data-target="view-enlaces"><a href="#"><i class="fa-solid fa-link"></i> Enlaces</a></li>
+                    </ul>
+                </nav>
+
+                <div class="divider"><span>Módulos</span></div>
+                
+                <nav class="side-nav" id="nav-dynamic-modules">
+                    <ul id="dynamic-modules-list">
+                        <!-- Dynamic modules injected here -->
+                    </ul>
+                </nav>
+
+                <div class="divider"><span>Mis Enlaces</span></div>
+                
+                <nav class="side-nav nav-links" id="nav-custom-links">
+                    <div id="custom-links-container" class="links-grid">
+                        <!-- Custom links injected here as small buttons -->
+                    </div>
+                </nav>
+
+                <!-- Settings/Modules Management at the bottom -->
+                <nav class="side-nav nav-bottom">
+                    <ul>
+                        <li data-target="view-modulos" class="btn-modulos"><a href="#"><i class="fa-solid fa-gear"></i> Módulos</a></li>
                     </ul>
                 </nav>
             </aside>
 
             <!-- Center Column: Main Content (70%) -->
-            <section class="col-center">
-                <div class="content-header">
-                    <h1>Panel de Control</h1>
-                    <p>Bienvenido a tu espacio de trabajo.</p>
-                </div>
+            <section class="col-center relative-container">
                 
-                <div class="modules-container">
-                    <div class="module-card glass-panel">
-                        <h3>Módulo de Ejemplo</h3>
-                        <p>Aquí se desarrollará el contenido principal y los módulos personalizados según la necesidad de la empresa.</p>
+                <!-- VISTA: TAREAS DIARIAS -->
+                <div id="view-tareas" class="module-view">
+                    <div class="content-header">
+                        <h1><i class="fa-solid fa-list-check"></i> Tareas Diarias</h1>
+                        <p>Añade tareas que debes realizar todos los días.</p>
+                    </div>
+                    <form id="form-tarea" class="glass-panel p-20 mb-20">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <i class="fa-solid fa-pen"></i>
+                                <input type="text" id="tarea-name" placeholder="Nombre de la tarea" required>
+                            </div>
+                            <div class="input-group time-input">
+                                <i class="fa-regular fa-clock"></i>
+                                <input type="time" id="tarea-time" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
+                        </div>
+                    </form>
+                    <div id="tareas-list-center" class="list-container"></div>
+                </div>
+
+                <!-- VISTA: PROGRAMADAS -->
+                <div id="view-programadas" class="module-view hidden">
+                    <div class="content-header">
+                        <h1><i class="fa-regular fa-calendar-days"></i> Tareas Programadas</h1>
+                        <p>Eventos o tareas de un solo uso en una fecha específica.</p>
+                    </div>
+                    <form id="form-programada" class="glass-panel p-20 mb-20">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <i class="fa-solid fa-pen"></i>
+                                <input type="text" id="prog-name" placeholder="Nombre del evento" required>
+                            </div>
+                            <div class="input-group date-input">
+                                <i class="fa-regular fa-calendar"></i>
+                                <input type="date" id="prog-date" required>
+                            </div>
+                            <div class="input-group time-input">
+                                <i class="fa-regular fa-clock"></i>
+                                <input type="time" id="prog-time" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
+                        </div>
+                    </form>
+                    <div id="programadas-list-center" class="list-container"></div>
+                </div>
+
+                <!-- VISTA: HISTORIAL -->
+                <div id="view-historial" class="module-view hidden">
+                    <div class="content-header">
+                        <h1><i class="fa-solid fa-clock-rotate-left"></i> Historial</h1>
+                        <p>Registro de tareas concluidas.</p>
+                    </div>
+                    <div id="historial-list" class="list-container"></div>
+                </div>
+
+                <!-- VISTA: ENLACES -->
+                <div id="view-enlaces" class="module-view hidden">
+                    <div class="content-header">
+                        <h1><i class="fa-solid fa-link"></i> Gestión de Enlaces</h1>
+                        <p>Añade accesos directos rápidos a otras webs.</p>
+                    </div>
+                    <form id="form-enlace" class="glass-panel p-20 mb-20">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <i class="fa-solid fa-tag"></i>
+                                <input type="text" id="enlace-name" placeholder="Nombre" required>
+                            </div>
+                            <div class="input-group">
+                                <i class="fa-solid fa-globe"></i>
+                                <input type="url" id="enlace-url" placeholder="https://..." required>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
+                        </div>
+                    </form>
+                    <div id="enlaces-list-center" class="list-container"></div>
+                </div>
+
+                <!-- VISTA: CONFIGURACIÓN DE MÓDULOS -->
+                <div id="view-modulos" class="module-view hidden">
+                    <div class="content-header">
+                        <h1><i class="fa-solid fa-gear"></i> Gestión de Módulos</h1>
+                        <p>Crea módulos personalizados integrando aplicaciones propias (iframes).</p>
+                    </div>
+                    <form id="form-modulo" class="glass-panel p-20 mb-20">
+                        <div class="form-row align-items-center">
+                            <div class="input-group select-wrapper">
+                                <i class="fa-solid fa-icons"></i>
+                                <select id="modulo-icon" required>
+                                    <option value="" disabled selected>Icono</option>
+                                    <option value="fa-solid fa-car">Coche</option>
+                                    <option value="fa-solid fa-truck">Camión</option>
+                                    <option value="fa-solid fa-plane">Avión</option>
+                                    <option value="fa-solid fa-ship">Barco</option>
+                                    <option value="fa-solid fa-shop">Tienda</option>
+                                    <option value="fa-solid fa-city">Edificios</option>
+                                    <option value="fa-solid fa-briefcase">Maletín</option>
+                                    <option value="fa-solid fa-folder">Carpeta</option>
+                                    <option value="fa-solid fa-file-invoice">Factura</option>
+                                    <option value="fa-solid fa-chart-line">Gráfica</option>
+                                    <option value="fa-solid fa-calculator">Calculadora</option>
+                                    <option value="fa-solid fa-money-bill-wave">Dinero</option>
+                                    <option value="fa-solid fa-credit-card">Tarjeta</option>
+                                    <option value="fa-solid fa-users">Usuarios</option>
+                                    <option value="fa-solid fa-address-card">Contacto</option>
+                                    <option value="fa-solid fa-envelope">Email</option>
+                                    <option value="fa-solid fa-phone">Teléfono</option>
+                                    <option value="fa-brands fa-whatsapp">WhatsApp</option>
+                                    <option value="fa-solid fa-comments">Chat</option>
+                                    <option value="fa-solid fa-share-nodes">Redes</option>
+                                    <option value="fa-solid fa-globe">Web</option>
+                                    <option value="fa-solid fa-cloud">Nube</option>
+                                    <option value="fa-solid fa-database">Base Datos</option>
+                                    <option value="fa-solid fa-server">Servidor</option>
+                                    <option value="fa-solid fa-laptop">Portátil</option>
+                                    <option value="fa-solid fa-mobile-screen">Móvil</option>
+                                    <option value="fa-solid fa-desktop">PC</option>
+                                    <option value="fa-solid fa-camera">Cámara</option>
+                                    <option value="fa-solid fa-video">Vídeo</option>
+                                    <option value="fa-solid fa-map-location-dot">Mapa</option>
+                                    <option value="fa-solid fa-location-dot">Ubicación</option>
+                                    <option value="fa-solid fa-thumbtack">Pin</option>
+                                    <option value="fa-solid fa-calendar">Calendario</option>
+                                    <option value="fa-solid fa-bell">Campana</option>
+                                    <option value="fa-solid fa-bullhorn">Altavoz</option>
+                                    <option value="fa-solid fa-magnifying-glass">Buscar</option>
+                                    <option value="fa-solid fa-key">Llave</option>
+                                    <option value="fa-solid fa-lock">Candado</option>
+                                    <option value="fa-solid fa-shield-halved">Escudo</option>
+                                    <option value="fa-solid fa-wrench">Herramienta</option>
+                                    <option value="fa-solid fa-screwdriver-wrench">Ajustes</option>
+                                    <option value="fa-solid fa-hammer">Martillo</option>
+                                    <option value="fa-solid fa-lightbulb">Idea</option>
+                                    <option value="fa-solid fa-star">Estrella</option>
+                                    <option value="fa-solid fa-heart">Corazón</option>
+                                    <option value="fa-solid fa-thumbs-up">Me gusta</option>
+                                    <option value="fa-solid fa-check">Check</option>
+                                    <option value="fa-solid fa-triangle-exclamation">Alerta</option>
+                                    <option value="fa-solid fa-circle-info">Info</option>
+                                </select>
+                            </div>
+                            <div class="input-group flex-1">
+                                <i class="fa-solid fa-pen"></i>
+                                <input type="text" id="modulo-name" placeholder="Nombre del módulo" required>
+                            </div>
+                            <div class="input-group flex-2">
+                                <i class="fa-solid fa-link"></i>
+                                <input type="url" id="modulo-url" placeholder="https://tu-app-interna.com" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Crear</button>
+                        </div>
+                    </form>
+                    <div id="modulos-grid" class="modules-container">
+                        <!-- Module cards injected here -->
                     </div>
                 </div>
+
+                <!-- VISTA: IFRAME MÓDULO PERSONALIZADO -->
+                <div id="view-iframe" class="module-view hidden iframe-container">
+                    <iframe id="modulo-iframe" src="" frameborder="0" allowfullscreen></iframe>
+                </div>
+
             </section>
 
-            <!-- Right Column: Context/Widgets (15%) -->
+            <!-- Right Column: Agenda (15%) -->
             <aside class="col-right glass-panel">
-                <div class="widget">
-                    <h4>Actividad Reciente</h4>
-                    <p class="text-sm text-muted">Próximamente...</p>
+                <div class="agenda-header">
+                    <h3><i class="fa-regular fa-calendar"></i> Agenda</h3>
                 </div>
-                <div class="widget">
-                    <h4>Notificaciones</h4>
-                    <p class="text-sm text-muted">No hay avisos.</p>
+                <div id="agenda-container" class="agenda-content">
+                    <!-- Days and tasks injected here -->
                 </div>
             </aside>
 
         </main>
+    </div>
+
+    <!-- MODALES -->
+    <div id="modal-tarea" class="modal-overlay hidden">
+        <div class="modal-box glass-panel">
+            <div class="modal-header">
+                <h3 id="modal-tarea-title">Detalle de Tarea</h3>
+                <button class="btn-close" id="modal-tarea-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-historial-observaciones" class="observaciones-history"></div>
+                <div class="input-group">
+                    <textarea id="modal-observacion" rows="3" placeholder="Añadir una observación (opcional)..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-concluir" class="btn btn-success"><i class="fa-solid fa-check"></i> Concluir Tarea</button>
+                    <button id="btn-reprogramar" class="btn btn-warning"><i class="fa-solid fa-clock"></i> Reprogramar</button>
+                </div>
+                <div id="reprogramar-zona" class="reprogramar-form hidden mt-15">
+                    <p class="text-sm text-muted mb-10">Selecciona nueva fecha y hora:</p>
+                    <div class="form-row">
+                        <input type="date" id="reprogramar-date" class="form-control">
+                        <input type="time" id="reprogramar-time" class="form-control">
+                        <button id="btn-confirm-reprogramar" class="btn btn-primary btn-sm">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Firebase JS SDKs -->
