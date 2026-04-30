@@ -137,26 +137,47 @@ function iniciarListeners(uid) {
     limpiarListeners();
     const userRef = db.collection('users').doc(uid);
 
-    unsubscribes.push(userRef.collection('modules').onSnapshot(snap => {
-        renderizarModulos(snap.docs.map(d => ({id: d.id, ...d.data()})));
-    }, err => showToast('Error cargando módulos', 'error')));
-
-    unsubscribes.push(userRef.collection('links').onSnapshot(snap => {
-        renderizarEnlaces(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    // 1. Cargar preferencias (orden y fijos ocultos)
+    unsubscribes.push(userRef.collection('settings').doc('prefs').onSnapshot(snap => {
+        if(snap.exists) {
+            userSettings = snap.data();
+            if(!userSettings.moduleOrder) userSettings.moduleOrder = [];
+            if(!userSettings.linkOrder) userSettings.linkOrder = [];
+            if(!userSettings.hiddenFixed) userSettings.hiddenFixed = [];
+        } else {
+            userSettings = { moduleOrder: [], linkOrder: [], hiddenFixed: [] };
+        }
+        renderizarModulosCombinados();
+        renderizarEnlacesCombinados();
     }));
 
+    // 2. Módulos personalizados
+    unsubscribes.push(userRef.collection('modules').onSnapshot(snap => {
+        datosModulosPersonales = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderizarModulosCombinados();
+    }, err => showToast('Error cargando módulos', 'error')));
+
+    // 3. Enlaces
+    unsubscribes.push(userRef.collection('links').onSnapshot(snap => {
+        datosEnlaces = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderizarEnlacesCombinados();
+    }));
+
+    // 4. Tareas Diarias
     unsubscribes.push(userRef.collection('tasks').onSnapshot(snap => {
         datosTareas = snap.docs.map(d => ({id: d.id, ...d.data()}));
         renderizarTareasCentral();
         actualizarAgenda();
     }));
 
+    // 5. Tareas Programadas
     unsubscribes.push(userRef.collection('scheduled').onSnapshot(snap => {
         datosProgramadas = snap.docs.map(d => ({id: d.id, ...d.data()}));
         renderizarProgramadasCentral();
         actualizarAgenda();
     }));
 
+    // 6. Historial
     unsubscribes.push(userRef.collection('history').orderBy('fecha', 'desc').onSnapshot(snap => {
         renderizarHistorial(snap.docs.map(d => ({id: d.id, ...d.data()})));
     }));
@@ -166,7 +187,278 @@ function iniciarListeners(uid) {
 // FUNCIONES CRUD Y RENDER
 // ==========================
 
-// --- MÓDULOS ---
+// ==========================
+// BUSCADOR DE ICONOS
+// ==========================
+const iconosDisponibles = [
+    // Oficina / Trabajo
+    { class: "fa-solid fa-briefcase", tags: ["oficina", "trabajo", "maletin", "maletín", "negocios"] },
+    { class: "fa-solid fa-file-invoice", tags: ["factura", "documento", "archivo", "papel"] },
+    { class: "fa-solid fa-folder", tags: ["carpeta", "directorio", "archivos"] },
+    { class: "fa-solid fa-folder-open", tags: ["carpeta", "abierta", "directorio"] },
+    { class: "fa-solid fa-paperclip", tags: ["clip", "adjunto", "archivo"] },
+    { class: "fa-solid fa-pen", tags: ["lapiz", "lápiz", "boligrafo", "escribir", "editar"] },
+    { class: "fa-solid fa-print", tags: ["impresora", "imprimir", "papel"] },
+    { class: "fa-solid fa-calculator", tags: ["calculadora", "cuentas", "matematicas", "numeros"] },
+    { class: "fa-solid fa-calendar", tags: ["calendario", "fecha", "dia", "evento"] },
+    { class: "fa-solid fa-clipboard", tags: ["portapapeles", "notas", "copiar"] },
+    { class: "fa-solid fa-clipboard-list", tags: ["tareas", "lista", "check"] },
+    { class: "fa-solid fa-book", tags: ["libro", "leer", "manual", "documentacion"] },
+    { class: "fa-solid fa-building", tags: ["edificio", "empresa", "construccion"] },
+    { class: "fa-solid fa-city", tags: ["ciudad", "urbano", "edificios"] },
+    { class: "fa-solid fa-industry", tags: ["industria", "fabrica", "produccion"] },
+    
+    // Usuarios / Clientes
+    { class: "fa-solid fa-user", tags: ["usuario", "persona", "perfil", "cliente"] },
+    { class: "fa-solid fa-users", tags: ["usuarios", "personas", "equipo", "clientes", "grupo"] },
+    { class: "fa-solid fa-user-tie", tags: ["jefe", "gerente", "profesional", "ejecutivo"] },
+    { class: "fa-solid fa-address-book", tags: ["contactos", "agenda", "directorio"] },
+    { class: "fa-solid fa-address-card", tags: ["tarjeta", "identificacion", "dni"] },
+    { class: "fa-solid fa-handshake", tags: ["acuerdo", "trato", "apreton", "manos", "socios"] },
+
+    // Comunicaciones / Internet
+    { class: "fa-solid fa-envelope", tags: ["correo", "email", "mensaje", "carta"] },
+    { class: "fa-solid fa-phone", tags: ["telefono", "llamar", "contacto"] },
+    { class: "fa-solid fa-mobile-screen", tags: ["movil", "celular", "smartphone"] },
+    { class: "fa-solid fa-laptop", tags: ["portatil", "ordenador", "computadora"] },
+    { class: "fa-solid fa-desktop", tags: ["pantalla", "pc", "ordenador", "monitor"] },
+    { class: "fa-solid fa-globe", tags: ["internet", "web", "mundo", "global"] },
+    { class: "fa-solid fa-wifi", tags: ["wifi", "conexion", "internet", "red"] },
+    { class: "fa-solid fa-cloud", tags: ["nube", "almacenamiento", "online"] },
+    { class: "fa-solid fa-server", tags: ["servidor", "hosting", "datos"] },
+
+    // Herramientas / Ajustes
+    { class: "fa-solid fa-gear", tags: ["ajustes", "configuracion", "engranaje", "opciones"] },
+    { class: "fa-solid fa-screwdriver-wrench", tags: ["herramientas", "llave", "mantenimiento", "reparacion"] },
+    { class: "fa-solid fa-hammer", tags: ["martillo", "construccion", "golpe"] },
+    { class: "fa-solid fa-key", tags: ["llave", "acceso", "seguridad"] },
+    { class: "fa-solid fa-lock", tags: ["candado", "bloqueo", "seguridad", "privado"] },
+    { class: "fa-solid fa-shield-halved", tags: ["escudo", "proteccion", "antivirus"] },
+
+    // Finanzas
+    { class: "fa-solid fa-money-bill", tags: ["dinero", "billete", "pago", "efectivo"] },
+    { class: "fa-solid fa-coins", tags: ["monedas", "suelto", "dinero", "ahorro"] },
+    { class: "fa-solid fa-credit-card", tags: ["tarjeta", "credito", "pago", "banco"] },
+    { class: "fa-solid fa-wallet", tags: ["cartera", "billetera", "dinero"] },
+    { class: "fa-solid fa-chart-line", tags: ["grafica", "crecimiento", "estadisticas", "ventas"] },
+    { class: "fa-solid fa-chart-pie", tags: ["grafica", "pastel", "porcentaje", "estadisticas"] },
+    { class: "fa-solid fa-percent", tags: ["porcentaje", "descuento", "oferta", "impuesto"] },
+    { class: "fa-solid fa-piggy-bank", tags: ["hucha", "ahorro", "cerdito", "banco"] },
+
+    // Transportes
+    { class: "fa-solid fa-car", tags: ["coche", "auto", "vehiculo", "transporte"] },
+    { class: "fa-solid fa-truck", tags: ["camion", "furgoneta", "reparto", "transporte", "logistica"] },
+    { class: "fa-solid fa-plane", tags: ["avion", "vuelo", "viaje", "aeropuerto"] },
+    { class: "fa-solid fa-ship", tags: ["barco", "buque", "mar", "envio"] },
+    { class: "fa-solid fa-motorcycle", tags: ["moto", "motocicleta", "reparto"] },
+
+    // Varios / Interfaz
+    { class: "fa-solid fa-bell", tags: ["campana", "notificacion", "aviso", "alerta"] },
+    { class: "fa-solid fa-bookmark", tags: ["marcador", "guardado", "favorito"] },
+    { class: "fa-solid fa-star", tags: ["estrella", "favorito", "destacado", "puntuacion"] },
+    { class: "fa-solid fa-heart", tags: ["corazon", "me gusta", "favorito", "amor"] },
+    { class: "fa-solid fa-thumbs-up", tags: ["pulgar", "ok", "bien", "aprobado"] },
+    { class: "fa-solid fa-circle-check", tags: ["check", "correcto", "completado", "hecho"] },
+    { class: "fa-solid fa-magnifying-glass", tags: ["lupa", "buscar", "busqueda"] },
+    { class: "fa-solid fa-location-dot", tags: ["ubicacion", "mapa", "pin", "lugar"] },
+    { class: "fa-solid fa-map", tags: ["mapa", "plano", "ruta", "geografia"] }
+];
+
+function renderizarBuscadorIconos() {
+    const grid = document.getElementById('icon-grid');
+    const searchInput = document.getElementById('search-icon');
+    const dropdown = document.getElementById('icon-dropdown');
+    const btnToggle = document.getElementById('btn-icon-picker');
+    
+    if(!grid || !searchInput || !dropdown || !btnToggle) return;
+
+    function renderGrid(filtro = '') {
+        grid.innerHTML = '';
+        const lowerFilter = filtro.toLowerCase();
+        iconosDisponibles.forEach(iconoObj => {
+            const iconoClase = iconoObj.class;
+            // Busca si alguna etiqueta o el nombre de la clase incluye el filtro
+            const coincide = iconoObj.tags.some(tag => tag.includes(lowerFilter)) || iconoClase.toLowerCase().includes(lowerFilter);
+            
+            if(coincide) {
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'icon-picker-item';
+                iconDiv.innerHTML = `<i class="${iconoClase}" title="${iconoObj.tags.join(', ')}"></i>`;
+                iconDiv.onclick = () => {
+                    document.getElementById('selected-icon-preview').className = iconoClase;
+                    document.getElementById('selected-icon-text').textContent = iconoObj.tags[0].charAt(0).toUpperCase() + iconoObj.tags[0].slice(1);
+                    document.getElementById('modulo-icono').value = iconoClase;
+                    dropdown.classList.add('hidden');
+                };
+                grid.appendChild(iconDiv);
+            }
+        });
+    }
+
+    btnToggle.onclick = () => {
+        dropdown.classList.toggle('hidden');
+        if(!dropdown.classList.contains('hidden')) {
+            renderGrid();
+            searchInput.focus();
+        }
+    };
+
+    searchInput.addEventListener('input', (e) => {
+        renderGrid(e.target.value);
+    });
+
+    // Cerrar si se hace clic fuera
+    document.addEventListener('click', (e) => {
+        if(!e.target.closest('.icon-picker-container')) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+// Inicializar buscador una vez al cargar
+document.addEventListener('DOMContentLoaded', renderizarBuscadorIconos);
+
+
+// ==========================
+// CONFIGURACIÓN Y MÓDULOS UNIFICADOS
+// ==========================
+const modulosFijos = [
+    { id: 'fijo_tareas', name: 'Tareas', icon: 'fa-solid fa-list-check', vista: 'vista-tareas', isFixed: true },
+    { id: 'fijo_programadas', name: 'Programadas', icon: 'fa-regular fa-calendar-days', vista: 'vista-programadas', isFixed: true },
+    { id: 'fijo_historial', name: 'Historial', icon: 'fa-solid fa-clock-rotate-left', vista: 'vista-historial', isFixed: true },
+    { id: 'fijo_enlaces', name: 'Enlaces', icon: 'fa-solid fa-link', vista: 'vista-enlaces', isFixed: true }
+];
+
+let userSettings = { moduleOrder: [], linkOrder: [], hiddenFixed: [] };
+let datosModulosPersonales = [];
+let datosEnlaces = [];
+let sortableModules = null;
+let sortableLinks = null;
+
+function guardarSettings() {
+    if(currentUser) db.collection('users').doc(currentUser.uid).collection('settings').doc('prefs').set(userSettings);
+}
+
+// Inicializar Drag & Drop
+function inicializarSortable() {
+    const listaModulos = document.getElementById('lista-modulos-dinamicos');
+    const listaEnlaces = document.getElementById('lista-enlaces-dinamicos');
+
+    if(listaModulos && !sortableModules) {
+        sortableModules = new Sortable(listaModulos, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: () => {
+                const newOrder = Array.from(listaModulos.children).map(li => li.dataset.id);
+                userSettings.moduleOrder = newOrder;
+                guardarSettings();
+            }
+        });
+    }
+
+    if(listaEnlaces && !sortableLinks) {
+        sortableLinks = new Sortable(listaEnlaces, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: () => {
+                const newOrder = Array.from(listaEnlaces.children).map(el => el.dataset.id);
+                userSettings.linkOrder = newOrder;
+                guardarSettings();
+            }
+        });
+    }
+}
+
+// Unificar y renderizar módulos en el sidebar y en ajustes
+function renderizarModulosCombinados() {
+    const listaNav = document.getElementById('lista-modulos-dinamicos');
+    const gridAjustes = document.getElementById('contenedor-modulos');
+    if(!listaNav || !gridAjustes) return;
+    
+    listaNav.innerHTML = '';
+    gridAjustes.innerHTML = '';
+
+    // Combinar fijos y personales
+    let combinados = [...modulosFijos, ...datosModulosPersonales];
+
+    // Ordenar según moduleOrder
+    if(userSettings.moduleOrder && userSettings.moduleOrder.length > 0) {
+        combinados.sort((a, b) => {
+            let indexA = userSettings.moduleOrder.indexOf(a.id);
+            let indexB = userSettings.moduleOrder.indexOf(b.id);
+            if(indexA === -1) indexA = 999;
+            if(indexB === -1) indexB = 999;
+            return indexA - indexB;
+        });
+    }
+
+    combinados.forEach(mod => {
+        // Determinar si está activo (Fijos usan hiddenFixed, Personales usan mod.activo)
+        let isActivo = mod.isFixed ? !userSettings.hiddenFixed.includes(mod.id) : mod.activo;
+
+        // Renderizar en el sidebar si está activo
+        if(isActivo) {
+            // Lógica especial para 'fijo_enlaces': si se desactiva, se oculta del sidebar pero los enlaces persisten.
+            const li = document.createElement('li');
+            li.dataset.id = mod.id;
+            li.innerHTML = `<a href="#"><i class="${mod.icon}"></i> ${mod.name}</a>`;
+            li.onclick = () => {
+                if(mod.isFixed) verVista(mod.vista);
+                else verVista('vista-iframe', mod.url);
+            };
+            listaNav.appendChild(li);
+        }
+
+        // Si Enlaces está desactivado, esconder la cabecera de Mis Enlaces
+        if(mod.id === 'fijo_enlaces') {
+            const headerEnlaces = document.getElementById('header-enlaces');
+            if(headerEnlaces) headerEnlaces.style.display = isActivo ? 'flex' : 'none';
+        }
+
+        // Renderizar en Ajustes
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'tarjeta-modulo';
+        let botonBasura = mod.isFixed ? '' : `<button class="btn-icon" onclick="borrarModulo('${mod.id}')"><i class="fa-solid fa-trash"></i></button>`;
+        tarjeta.innerHTML = `
+            <i class="${mod.icon}"></i>
+            <h4 class="mb-10">${mod.name}</h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+                <label class="switch">
+                    <input type="checkbox" ${isActivo ? 'checked' : ''} onchange="toggleModuloGral('${mod.id}', this.checked, ${mod.isFixed})">
+                    <span class="slider"></span>
+                </label>
+                ${botonBasura}
+            </div>
+        `;
+        gridAjustes.appendChild(tarjeta);
+    });
+
+    inicializarSortable();
+}
+
+window.toggleModuloGral = (id, activo, isFixed) => {
+    if(isFixed) {
+        if(activo) {
+            userSettings.hiddenFixed = userSettings.hiddenFixed.filter(fid => fid !== id);
+        } else {
+            if(!userSettings.hiddenFixed.includes(id)) userSettings.hiddenFixed.push(id);
+        }
+        guardarSettings();
+        renderizarModulosCombinados(); // Actualización optimista
+    } else {
+        db.collection('users').doc(currentUser.uid).collection('modules').doc(id).update({activo});
+    }
+};
+
+window.borrarModulo = (id) => { 
+    if(confirm('¿Seguro que deseas borrar este módulo de forma permanente?')) {
+        db.collection('users').doc(currentUser.uid).collection('modules').doc(id).delete()
+            .then(() => showToast('Módulo eliminado', 'info'))
+            .catch(() => showToast('Error al eliminar', 'error'));
+    }
+};
+
 document.getElementById('form-modulo').addEventListener('submit', async (e) => {
     e.preventDefault();
     if(!currentUser) return;
@@ -182,53 +474,56 @@ document.getElementById('form-modulo').addEventListener('submit', async (e) => {
         await db.collection('users').doc(currentUser.uid).collection('modules').add(data);
         showToast('Módulo creado', 'success');
         e.target.reset();
+        document.getElementById('selected-icon-preview').className = 'fa-solid fa-icons';
+        document.getElementById('selected-icon-text').textContent = 'Icono...';
     } catch (error) {
         showToast('Error al crear módulo', 'error');
     }
 });
 
-function renderizarModulos(modulos) {
-    const listaNav = document.getElementById('lista-modulos-dinamicos');
-    const gridAjustes = document.getElementById('contenedor-modulos');
-    if(!listaNav || !gridAjustes) return;
-    
-    listaNav.innerHTML = '';
-    gridAjustes.innerHTML = '';
+// --- ENLACES ---
+function renderizarEnlacesCombinados() {
+    const listaIzq = document.getElementById('lista-enlaces-dinamicos');
+    const contCentro = document.getElementById('contenedor-enlaces');
+    if(!listaIzq || !contCentro) return;
 
-    modulos.forEach(mod => {
-        if(mod.activo) {
-            const li = document.createElement('li');
-            li.innerHTML = `<a href="#"><i class="${mod.icon}"></i> ${mod.name}</a>`;
-            li.onclick = () => verVista('vista-iframe', mod.url);
-            listaNav.appendChild(li);
-        }
+    listaIzq.innerHTML = '';
+    contCentro.innerHTML = '';
 
-        const tarjeta = document.createElement('div');
-        tarjeta.className = 'tarjeta-modulo';
-        tarjeta.innerHTML = `
-            <i class="${mod.icon}"></i>
-            <h4 class="mb-10">${mod.name}</h4>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
-                <label class="switch">
-                    <input type="checkbox" ${mod.activo ? 'checked' : ''} onchange="toggleModulo('${mod.id}', this.checked)">
-                    <span class="slider"></span>
-                </label>
-                <button class="btn-icon" onclick="borrarModulo('${mod.id}')"><i class="fa-solid fa-trash"></i></button>
+    let ordenados = [...datosEnlaces];
+    if(userSettings.linkOrder && userSettings.linkOrder.length > 0) {
+        ordenados.sort((a, b) => {
+            let indexA = userSettings.linkOrder.indexOf(a.id);
+            let indexB = userSettings.linkOrder.indexOf(b.id);
+            if(indexA === -1) indexA = 999;
+            if(indexB === -1) indexB = 999;
+            return indexA - indexB;
+        });
+    }
+
+    ordenados.forEach(link => {
+        // Para sidebar
+        const aSidebar = document.createElement('a');
+        aSidebar.href = link.url;
+        aSidebar.target = "_blank";
+        aSidebar.dataset.id = link.id;
+        aSidebar.innerHTML = `<i class="fa-solid fa-link"></i> ${link.name}`;
+        listaIzq.appendChild(aSidebar);
+
+        // Para vista central
+        contCentro.innerHTML += `
+            <div class="fila-item">
+                <div>
+                    <h4>${link.name}</h4>
+                    <a href="${link.url}" target="_blank" class="text-sm text-info" style="text-decoration:none;">${link.url}</a>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="borrarEnlace('${link.id}')"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
-        gridAjustes.appendChild(tarjeta);
     });
+    inicializarSortable();
 }
-window.toggleModulo = (id, activo) => db.collection('users').doc(currentUser.uid).collection('modules').doc(id).update({activo});
-window.borrarModulo = (id) => { 
-    if(confirm('¿Seguro que deseas borrar este módulo de forma permanente?')) {
-        db.collection('users').doc(currentUser.uid).collection('modules').doc(id).delete()
-            .then(() => showToast('Módulo eliminado', 'info'))
-            .catch(() => showToast('Error al eliminar', 'error'));
-    }
-};
 
-// --- ENLACES ---
 document.getElementById('form-enlace').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
@@ -242,30 +537,10 @@ document.getElementById('form-enlace').addEventListener('submit', async (e) => {
     } catch(err) { showToast('Error guardando enlace', 'error'); }
 });
 
-function renderizarEnlaces(enlaces) {
-    const listaIzq = document.getElementById('lista-enlaces-dinamicos');
-    const contCentro = document.getElementById('contenedor-enlaces');
-    if(!listaIzq || !contCentro) return;
-
-    listaIzq.innerHTML = '';
-    contCentro.innerHTML = '';
-
-    enlaces.forEach(link => {
-        listaIzq.innerHTML += `<a href="${link.url}" target="_blank"><i class="fa-solid fa-link"></i> ${link.name}</a>`;
-        contCentro.innerHTML += `
-            <div class="fila-item">
-                <div>
-                    <h4>${link.name}</h4>
-                    <a href="${link.url}" target="_blank" class="text-sm text-info" style="text-decoration:none;">${link.url}</a>
-                </div>
-                <button class="btn btn-danger btn-sm" onclick="borrarEnlace('${link.id}')"><i class="fa-solid fa-trash"></i></button>
-            </div>
-        `;
-    });
-}
 window.borrarEnlace = (id) => { 
     if(confirm('¿Borrar enlace?')) db.collection('users').doc(currentUser.uid).collection('links').doc(id).delete(); 
 };
+
 
 // --- TAREAS DIARIAS ---
 document.getElementById('form-tarea').addEventListener('submit', async (e) => {

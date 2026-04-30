@@ -151,6 +151,15 @@ select.input-estilo { appearance: none; cursor: pointer; }
 ::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.7; transition: 0.2s; }
 ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
+.icon-picker-item { 
+    display: flex; justify-content: center; align-items: center; 
+    padding: 10px; border-radius: 6px; cursor: pointer; 
+    color: var(--text-secondary); font-size: 1.2rem; transition: var(--transition); 
+}
+.icon-picker-item:hover { 
+    background: rgba(99, 102, 241, 0.2); color: var(--text-primary); transform: scale(1.1);
+}
+
 .error-message { color: var(--danger); font-size: 0.85rem; text-align: center; min-height: 20px; font-weight: 500; }
 
 /* ==================== AUTHENTICATION ==================== */
@@ -202,6 +211,19 @@ select.input-estilo { appearance: none; cursor: pointer; }
 .side-nav li:hover a { color: var(--text-primary); background: rgba(255,255,255,0.03); }
 .side-nav li.active a { color: var(--text-primary); background: rgba(99, 102, 241, 0.1); }
 .side-nav li.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent-primary); border-radius: 0 4px 4px 0; }
+
+.side-header {
+    display: flex; align-items: center; gap: 12px; padding: 12px 24px;
+    color: var(--text-primary); font-weight: 600; font-size: 0.95rem;
+    background: rgba(0,0,0,0.2); border-left: 3px solid var(--text-secondary);
+    border-radius: 0 4px 4px 0;
+}
+.side-header i { width: 20px; text-align: center; font-size: 1.1rem; }
+
+/* Sortable JS Styles */
+.sortable-ghost { opacity: 0.4; background: rgba(99, 102, 241, 0.2) !important; border: 1px dashed var(--accent-primary) !important; }
+.sortable-drag { cursor: grabbing !important; }
+.links-container .sortable-ghost { opacity: 0.4; }
 
 .links-container { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
 .links-container a { 
@@ -296,6 +318,12 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+.version-badge {
+    position: fixed; bottom: 10px; right: 15px; 
+    font-size: 0.75rem; color: var(--text-secondary); opacity: 0.5;
+    z-index: 1000; pointer-events: none;
+}
 
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 1024px) {

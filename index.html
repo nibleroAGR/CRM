@@ -18,6 +18,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    
+    <!-- SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body>
 
@@ -70,23 +73,15 @@
             <!-- Columna Izquierda: Menú -->
             <aside class="col-left glass-panel">
                 <nav class="side-nav">
-                    <ul>
-                        <li class="active" onclick="verVista('vista-tareas')"><a href="#"><i class="fa-solid fa-list-check"></i> Tareas</a></li>
-                        <li onclick="verVista('vista-programadas')"><a href="#"><i class="fa-regular fa-calendar-days"></i> Programadas</a></li>
-                        <li onclick="verVista('vista-historial')"><a href="#"><i class="fa-solid fa-clock-rotate-left"></i> Historial</a></li>
-                        <li onclick="verVista('vista-enlaces')"><a href="#"><i class="fa-solid fa-link"></i> Enlaces</a></li>
-                    </ul>
-                </nav>
-
-                <div class="divider"><span>Módulos</span></div>
-                <nav class="side-nav">
                     <ul id="lista-modulos-dinamicos">
-                        <!-- Se llenará con JS -->
+                        <!-- Se llenará con JS (Fijos y Personalizados) -->
                     </ul>
                 </nav>
 
-                <div class="divider"><span>Mis Enlaces</span></div>
-                <nav class="side-nav">
+                <div class="side-header mt-10" id="header-enlaces">
+                    <i class="fa-solid fa-globe"></i> Mis Enlaces
+                </div>
+                <nav class="side-nav mb-20">
                     <div id="lista-enlaces-dinamicos" class="links-container">
                         <!-- Se llenará con JS -->
                     </div>
@@ -95,7 +90,7 @@
                 <nav class="side-nav mt-auto">
                     <ul>
                         <li onclick="verVista('vista-ajustes')" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
-                            <a href="#" style="color:#6366f1;"><i class="fa-solid fa-gear"></i> Módulos</a>
+                            <a href="#" style="color:#6366f1;"><i class="fa-solid fa-gear"></i> Ajustes y Módulos</a>
                         </li>
                     </ul>
                 </nav>
@@ -153,17 +148,22 @@
                     <h2><i class="fa-solid fa-gear"></i> Gestión de Módulos</h2>
                     <p class="text-muted mb-20">Crea módulos personalizados (iframes) con iconos.</p>
                     <form id="form-modulo" class="glass-panel p-20 mb-20 flex-row">
-                        <select id="modulo-icono" class="input-estilo" required>
-                            <option value="" disabled selected>Icono</option>
-                            <option value="fa-solid fa-briefcase">Maletín</option>
-                            <option value="fa-solid fa-file-invoice">Factura</option>
-                            <option value="fa-solid fa-users">Clientes</option>
-                            <option value="fa-solid fa-chart-pie">Gráfica</option>
-                            <option value="fa-solid fa-envelope">Correo</option>
-                            <option value="fa-solid fa-car">Coche</option>
-                            <option value="fa-solid fa-desktop">Ordenador</option>
-                            <!-- Se pueden añadir más iconos de FontAwesome -->
-                        </select>
+                        <div class="icon-picker-container" style="position: relative; flex: 0.8; min-width: 180px;">
+                            <div class="input-estilo" style="cursor: pointer; display: flex; align-items: center; gap: 10px;" id="btn-icon-picker">
+                                <i id="selected-icon-preview" class="fa-solid fa-icons" style="color:var(--text-secondary); font-size:1.1rem;"></i>
+                                <span id="selected-icon-text" style="color:var(--text-secondary);">Icono...</span>
+                            </div>
+                            <div id="icon-dropdown" class="glass-panel hidden" style="position: absolute; top: 110%; left: 0; width: 280px; z-index: 50; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                                <input type="text" id="search-icon" class="input-estilo mb-10" placeholder="Buscar icono... (ej. user)">
+                                <div id="icon-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-height: 180px; overflow-y: auto; padding-right:5px;">
+                                    <!-- Se llenará con JS -->
+                                </div>
+                                <div class="mt-10 text-center">
+                                    <a href="https://fontawesome.com/search?q=&o=r&m=free" target="_blank" class="text-sm" style="color:var(--accent-primary); text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ver todos en FontAwesome</a>
+                                </div>
+                            </div>
+                            <input type="hidden" id="modulo-icono" value="fa-solid fa-icons" required>
+                        </div>
                         <input type="text" id="modulo-nombre" class="input-estilo flex-1" placeholder="Nombre módulo" required>
                         <input type="url" id="modulo-url" class="input-estilo flex-2" placeholder="https://mi-herramienta.com" required>
                         <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
@@ -217,6 +217,8 @@
 
     <!-- TOAST NOTIFICATIONS -->
     <div id="toast-container" class="toast-container"></div>
+
+    <div class="version-badge">v1.0.0</div>
 
     <!-- Custom JS (Normal script, no module!) -->
     <script src="app.js"></script>
