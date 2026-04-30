@@ -4,21 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM Profesional</title>
-    <link rel="stylesheet" href="style.css">
+    
+    <!-- Premium Font -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for icons -->
+    
+    <!-- Icons (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase Compat Libraries (Funciona abriendo el archivo localmente sin servidor) -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <!-- ==================== LOGIN SECTION ==================== -->
+    <!-- PANTALLA DE LOGIN -->
     <div id="login-section" class="auth-wrapper">
         <div class="glass-panel auth-panel">
             <div class="logo">
                 <i class="fa-solid fa-chart-pie"></i>
                 <h2>CRM System</h2>
             </div>
-            
             <p class="subtitle">Accede a tu zona de trabajo</p>
 
             <form id="login-form">
@@ -32,34 +41,23 @@
                 </div>
                 <div id="auth-error" class="error-message"></div>
                 
-                <button type="submit" class="btn btn-primary" id="btn-login">
-                    Iniciar Sesión
-                </button>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Iniciar Sesión</button>
             </form>
 
-            <div class="divider">
-                <span>O</span>
-            </div>
+            <div class="divider"><span>O</span></div>
 
             <button class="btn btn-google" id="btn-google-login">
-                <i class="fa-brands fa-google"></i>
-                Continuar con Google
+                <i class="fa-brands fa-google"></i> Continuar con Google
             </button>
-
-            <div class="auth-footer">
-                <p>¿No tienes cuenta? <a href="#" id="show-register">Regístrate aquí</a></p>
-            </div>
         </div>
     </div>
 
-    <!-- ==================== DASHBOARD SECTION ==================== -->
+    <!-- PANEL CRM (3 Columnas) -->
     <div id="dashboard-section" class="dashboard-wrapper hidden">
         
-        <!-- Navbar Superior (Mobile support / User profile) -->
+        <!-- Cabecera -->
         <header class="topbar glass-panel">
-            <div class="logo-small">
-                <i class="fa-solid fa-chart-pie"></i> CRM
-            </div>
+            <div class="logo-small"><i class="fa-solid fa-chart-pie"></i> CRM</div>
             <div class="user-profile">
                 <span id="user-name">Usuario</span>
                 <div class="avatar"><i class="fa-solid fa-user"></i></div>
@@ -67,255 +65,157 @@
             </div>
         </header>
 
-        <!-- 3 Column Layout -->
         <main class="main-layout">
             
-            <!-- Left Column: Navigation (15%) -->
+            <!-- Columna Izquierda: Menú -->
             <aside class="col-left glass-panel">
-                <nav class="side-nav" id="nav-fixed-modules">
+                <nav class="side-nav">
                     <ul>
-                        <!-- Fijos -->
-                        <li class="active" data-target="view-tareas"><a href="#"><i class="fa-solid fa-list-check"></i> Tareas</a></li>
-                        <li data-target="view-programadas"><a href="#"><i class="fa-regular fa-calendar-days"></i> Programadas</a></li>
-                        <li data-target="view-historial"><a href="#"><i class="fa-solid fa-clock-rotate-left"></i> Historial</a></li>
-                        <li data-target="view-enlaces"><a href="#"><i class="fa-solid fa-link"></i> Enlaces</a></li>
+                        <li class="active" onclick="verVista('vista-tareas')"><a href="#"><i class="fa-solid fa-list-check"></i> Tareas</a></li>
+                        <li onclick="verVista('vista-programadas')"><a href="#"><i class="fa-regular fa-calendar-days"></i> Programadas</a></li>
+                        <li onclick="verVista('vista-historial')"><a href="#"><i class="fa-solid fa-clock-rotate-left"></i> Historial</a></li>
+                        <li onclick="verVista('vista-enlaces')"><a href="#"><i class="fa-solid fa-link"></i> Enlaces</a></li>
                     </ul>
                 </nav>
 
                 <div class="divider"><span>Módulos</span></div>
-                
-                <nav class="side-nav" id="nav-dynamic-modules">
-                    <ul id="dynamic-modules-list">
-                        <!-- Dynamic modules injected here -->
+                <nav class="side-nav">
+                    <ul id="lista-modulos-dinamicos">
+                        <!-- Se llenará con JS -->
                     </ul>
                 </nav>
 
                 <div class="divider"><span>Mis Enlaces</span></div>
-                
-                <nav class="side-nav nav-links" id="nav-custom-links">
-                    <div id="custom-links-container" class="links-grid">
-                        <!-- Custom links injected here as small buttons -->
+                <nav class="side-nav">
+                    <div id="lista-enlaces-dinamicos" class="links-container">
+                        <!-- Se llenará con JS -->
                     </div>
                 </nav>
 
-                <!-- Settings/Modules Management at the bottom -->
-                <nav class="side-nav nav-bottom">
+                <nav class="side-nav mt-auto">
                     <ul>
-                        <li data-target="view-modulos" class="btn-modulos"><a href="#"><i class="fa-solid fa-gear"></i> Módulos</a></li>
+                        <li onclick="verVista('vista-ajustes')" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                            <a href="#" style="color:#6366f1;"><i class="fa-solid fa-gear"></i> Módulos</a>
+                        </li>
                     </ul>
                 </nav>
             </aside>
 
-            <!-- Center Column: Main Content (70%) -->
-            <section class="col-center relative-container">
+            <!-- Columna Central: Contenido Principal -->
+            <section class="col-center">
                 
-                <!-- VISTA: TAREAS DIARIAS -->
-                <div id="view-tareas" class="module-view">
-                    <div class="content-header">
-                        <h1><i class="fa-solid fa-list-check"></i> Tareas Diarias</h1>
-                        <p>Añade tareas que debes realizar todos los días.</p>
-                    </div>
-                    <form id="form-tarea" class="glass-panel p-20 mb-20">
-                        <div class="form-row">
-                            <div class="input-group">
-                                <i class="fa-solid fa-pen"></i>
-                                <input type="text" id="tarea-name" placeholder="Nombre de la tarea" required>
-                            </div>
-                            <div class="input-group time-input">
-                                <i class="fa-regular fa-clock"></i>
-                                <input type="time" id="tarea-time" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
-                        </div>
+                <!-- Vista Tareas -->
+                <div id="vista-tareas" class="vista-modulo">
+                    <h2><i class="fa-solid fa-list-check"></i> Tareas Diarias</h2>
+                    <p class="text-muted mb-20">Añade tareas recurrentes para tu día a día.</p>
+                    <form id="form-tarea" class="glass-panel p-20 mb-20 flex-row">
+                        <input type="text" id="tarea-nombre" class="input-estilo flex-1" placeholder="Nombre de tarea" required>
+                        <input type="time" id="tarea-hora" class="input-estilo" required>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
                     </form>
-                    <div id="tareas-list-center" class="list-container"></div>
+                    <div id="contenedor-tareas" class="listado"></div>
                 </div>
 
-                <!-- VISTA: PROGRAMADAS -->
-                <div id="view-programadas" class="module-view hidden">
-                    <div class="content-header">
-                        <h1><i class="fa-regular fa-calendar-days"></i> Tareas Programadas</h1>
-                        <p>Eventos o tareas de un solo uso en una fecha específica.</p>
-                    </div>
-                    <form id="form-programada" class="glass-panel p-20 mb-20">
-                        <div class="form-row">
-                            <div class="input-group">
-                                <i class="fa-solid fa-pen"></i>
-                                <input type="text" id="prog-name" placeholder="Nombre del evento" required>
-                            </div>
-                            <div class="input-group date-input">
-                                <i class="fa-regular fa-calendar"></i>
-                                <input type="date" id="prog-date" required>
-                            </div>
-                            <div class="input-group time-input">
-                                <i class="fa-regular fa-clock"></i>
-                                <input type="time" id="prog-time" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
-                        </div>
+                <!-- Vista Programadas -->
+                <div id="vista-programadas" class="vista-modulo hidden">
+                    <h2><i class="fa-regular fa-calendar-days"></i> Tareas Programadas</h2>
+                    <p class="text-muted mb-20">Añade tareas de un solo uso para una fecha.</p>
+                    <form id="form-programada" class="glass-panel p-20 mb-20 flex-row">
+                        <input type="text" id="prog-nombre" class="input-estilo flex-1" placeholder="Nombre del evento" required>
+                        <input type="date" id="prog-fecha" class="input-estilo" required>
+                        <input type="time" id="prog-hora" class="input-estilo" required>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
                     </form>
-                    <div id="programadas-list-center" class="list-container"></div>
+                    <div id="contenedor-programadas" class="listado"></div>
                 </div>
 
-                <!-- VISTA: HISTORIAL -->
-                <div id="view-historial" class="module-view hidden">
-                    <div class="content-header">
-                        <h1><i class="fa-solid fa-clock-rotate-left"></i> Historial</h1>
-                        <p>Registro de tareas concluidas.</p>
-                    </div>
-                    <div id="historial-list" class="list-container"></div>
+                <!-- Vista Historial -->
+                <div id="vista-historial" class="vista-modulo hidden">
+                    <h2><i class="fa-solid fa-clock-rotate-left"></i> Historial</h2>
+                    <p class="text-muted mb-20">Registro de tareas completadas.</p>
+                    <div id="contenedor-historial" class="listado"></div>
                 </div>
 
-                <!-- VISTA: ENLACES -->
-                <div id="view-enlaces" class="module-view hidden">
-                    <div class="content-header">
-                        <h1><i class="fa-solid fa-link"></i> Gestión de Enlaces</h1>
-                        <p>Añade accesos directos rápidos a otras webs.</p>
-                    </div>
-                    <form id="form-enlace" class="glass-panel p-20 mb-20">
-                        <div class="form-row">
-                            <div class="input-group">
-                                <i class="fa-solid fa-tag"></i>
-                                <input type="text" id="enlace-name" placeholder="Nombre" required>
-                            </div>
-                            <div class="input-group">
-                                <i class="fa-solid fa-globe"></i>
-                                <input type="url" id="enlace-url" placeholder="https://..." required>
-                            </div>
-                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
-                        </div>
+                <!-- Vista Enlaces -->
+                <div id="vista-enlaces" class="vista-modulo hidden">
+                    <h2><i class="fa-solid fa-link"></i> Enlaces Externos</h2>
+                    <p class="text-muted mb-20">Añade enlaces rápidos al menú izquierdo.</p>
+                    <form id="form-enlace" class="glass-panel p-20 mb-20 flex-row">
+                        <input type="text" id="enlace-nombre" class="input-estilo flex-1" placeholder="Nombre del enlace" required>
+                        <input type="url" id="enlace-url" class="input-estilo flex-2" placeholder="https://..." required>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
                     </form>
-                    <div id="enlaces-list-center" class="list-container"></div>
+                    <div id="contenedor-enlaces" class="listado"></div>
                 </div>
 
-                <!-- VISTA: CONFIGURACIÓN DE MÓDULOS -->
-                <div id="view-modulos" class="module-view hidden">
-                    <div class="content-header">
-                        <h1><i class="fa-solid fa-gear"></i> Gestión de Módulos</h1>
-                        <p>Crea módulos personalizados integrando aplicaciones propias (iframes).</p>
-                    </div>
-                    <form id="form-modulo" class="glass-panel p-20 mb-20">
-                        <div class="form-row align-items-center">
-                            <div class="input-group select-wrapper">
-                                <i class="fa-solid fa-icons"></i>
-                                <select id="modulo-icon" required>
-                                    <option value="" disabled selected>Icono</option>
-                                    <option value="fa-solid fa-car">Coche</option>
-                                    <option value="fa-solid fa-truck">Camión</option>
-                                    <option value="fa-solid fa-plane">Avión</option>
-                                    <option value="fa-solid fa-ship">Barco</option>
-                                    <option value="fa-solid fa-shop">Tienda</option>
-                                    <option value="fa-solid fa-city">Edificios</option>
-                                    <option value="fa-solid fa-briefcase">Maletín</option>
-                                    <option value="fa-solid fa-folder">Carpeta</option>
-                                    <option value="fa-solid fa-file-invoice">Factura</option>
-                                    <option value="fa-solid fa-chart-line">Gráfica</option>
-                                    <option value="fa-solid fa-calculator">Calculadora</option>
-                                    <option value="fa-solid fa-money-bill-wave">Dinero</option>
-                                    <option value="fa-solid fa-credit-card">Tarjeta</option>
-                                    <option value="fa-solid fa-users">Usuarios</option>
-                                    <option value="fa-solid fa-address-card">Contacto</option>
-                                    <option value="fa-solid fa-envelope">Email</option>
-                                    <option value="fa-solid fa-phone">Teléfono</option>
-                                    <option value="fa-brands fa-whatsapp">WhatsApp</option>
-                                    <option value="fa-solid fa-comments">Chat</option>
-                                    <option value="fa-solid fa-share-nodes">Redes</option>
-                                    <option value="fa-solid fa-globe">Web</option>
-                                    <option value="fa-solid fa-cloud">Nube</option>
-                                    <option value="fa-solid fa-database">Base Datos</option>
-                                    <option value="fa-solid fa-server">Servidor</option>
-                                    <option value="fa-solid fa-laptop">Portátil</option>
-                                    <option value="fa-solid fa-mobile-screen">Móvil</option>
-                                    <option value="fa-solid fa-desktop">PC</option>
-                                    <option value="fa-solid fa-camera">Cámara</option>
-                                    <option value="fa-solid fa-video">Vídeo</option>
-                                    <option value="fa-solid fa-map-location-dot">Mapa</option>
-                                    <option value="fa-solid fa-location-dot">Ubicación</option>
-                                    <option value="fa-solid fa-thumbtack">Pin</option>
-                                    <option value="fa-solid fa-calendar">Calendario</option>
-                                    <option value="fa-solid fa-bell">Campana</option>
-                                    <option value="fa-solid fa-bullhorn">Altavoz</option>
-                                    <option value="fa-solid fa-magnifying-glass">Buscar</option>
-                                    <option value="fa-solid fa-key">Llave</option>
-                                    <option value="fa-solid fa-lock">Candado</option>
-                                    <option value="fa-solid fa-shield-halved">Escudo</option>
-                                    <option value="fa-solid fa-wrench">Herramienta</option>
-                                    <option value="fa-solid fa-screwdriver-wrench">Ajustes</option>
-                                    <option value="fa-solid fa-hammer">Martillo</option>
-                                    <option value="fa-solid fa-lightbulb">Idea</option>
-                                    <option value="fa-solid fa-star">Estrella</option>
-                                    <option value="fa-solid fa-heart">Corazón</option>
-                                    <option value="fa-solid fa-thumbs-up">Me gusta</option>
-                                    <option value="fa-solid fa-check">Check</option>
-                                    <option value="fa-solid fa-triangle-exclamation">Alerta</option>
-                                    <option value="fa-solid fa-circle-info">Info</option>
-                                </select>
-                            </div>
-                            <div class="input-group flex-1">
-                                <i class="fa-solid fa-pen"></i>
-                                <input type="text" id="modulo-name" placeholder="Nombre del módulo" required>
-                            </div>
-                            <div class="input-group flex-2">
-                                <i class="fa-solid fa-link"></i>
-                                <input type="url" id="modulo-url" placeholder="https://tu-app-interna.com" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Crear</button>
-                        </div>
+                <!-- Vista Ajustes (Módulos) -->
+                <div id="vista-ajustes" class="vista-modulo hidden">
+                    <h2><i class="fa-solid fa-gear"></i> Gestión de Módulos</h2>
+                    <p class="text-muted mb-20">Crea módulos personalizados (iframes) con iconos.</p>
+                    <form id="form-modulo" class="glass-panel p-20 mb-20 flex-row">
+                        <select id="modulo-icono" class="input-estilo" required>
+                            <option value="" disabled selected>Icono</option>
+                            <option value="fa-solid fa-briefcase">Maletín</option>
+                            <option value="fa-solid fa-file-invoice">Factura</option>
+                            <option value="fa-solid fa-users">Clientes</option>
+                            <option value="fa-solid fa-chart-pie">Gráfica</option>
+                            <option value="fa-solid fa-envelope">Correo</option>
+                            <option value="fa-solid fa-car">Coche</option>
+                            <option value="fa-solid fa-desktop">Ordenador</option>
+                            <!-- Se pueden añadir más iconos de FontAwesome -->
+                        </select>
+                        <input type="text" id="modulo-nombre" class="input-estilo flex-1" placeholder="Nombre módulo" required>
+                        <input type="url" id="modulo-url" class="input-estilo flex-2" placeholder="https://mi-herramienta.com" required>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Añadir</button>
                     </form>
-                    <div id="modulos-grid" class="modules-container">
-                        <!-- Module cards injected here -->
-                    </div>
+                    <div id="contenedor-modulos" class="grid-modulos"></div>
                 </div>
 
-                <!-- VISTA: IFRAME MÓDULO PERSONALIZADO -->
-                <div id="view-iframe" class="module-view hidden iframe-container">
-                    <iframe id="modulo-iframe" src="" frameborder="0" allowfullscreen></iframe>
+                <!-- Vista Iframe Módulo -->
+                <div id="vista-iframe" class="vista-modulo hidden iframe-contenedor">
+                    <iframe id="iframe-app" src="" frameborder="0" allowfullscreen></iframe>
                 </div>
 
             </section>
 
-            <!-- Right Column: Agenda (15%) -->
+            <!-- Columna Derecha: Agenda -->
             <aside class="col-right glass-panel">
-                <div class="agenda-header">
-                    <h3><i class="fa-regular fa-calendar"></i> Agenda</h3>
-                </div>
-                <div id="agenda-container" class="agenda-content">
-                    <!-- Days and tasks injected here -->
+                <h3 style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+                    <i class="fa-regular fa-calendar"></i> Agenda
+                </h3>
+                <div id="agenda-contenedor" class="agenda">
+                    <!-- Se llena con JS -->
                 </div>
             </aside>
 
         </main>
     </div>
 
-    <!-- MODALES -->
-    <div id="modal-tarea" class="modal-overlay hidden">
-        <div class="modal-box glass-panel">
-            <div class="modal-header">
-                <h3 id="modal-tarea-title">Detalle de Tarea</h3>
-                <button class="btn-close" id="modal-tarea-close"><i class="fa-solid fa-xmark"></i></button>
+    <!-- MODAL DE ACCIÓN (Para la Agenda) -->
+    <div id="modal-tarea" class="modal-fondo hidden">
+        <div class="modal-caja glass-panel">
+            <h3 id="modal-titulo" class="mb-20">Detalle</h3>
+            <div id="modal-historial-obs" class="historial-obs mb-20"></div>
+            <textarea id="modal-observacion" class="input-estilo w-100 mb-20" rows="3" placeholder="Añadir observación..."></textarea>
+            
+            <div class="flex-row">
+                <button class="btn btn-success flex-1" onclick="concluirTarea()">Concluir Tarea</button>
+                <button class="btn btn-warning flex-1" onclick="mostrarReprogramar()">Reprogramar</button>
+                <button class="btn btn-danger" onclick="cerrarModal()"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="modal-body">
-                <div id="modal-historial-observaciones" class="observaciones-history"></div>
-                <div class="input-group">
-                    <textarea id="modal-observacion" rows="3" placeholder="Añadir una observación (opcional)..."></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button id="btn-concluir" class="btn btn-success"><i class="fa-solid fa-check"></i> Concluir Tarea</button>
-                    <button id="btn-reprogramar" class="btn btn-warning"><i class="fa-solid fa-clock"></i> Reprogramar</button>
-                </div>
-                <div id="reprogramar-zona" class="reprogramar-form hidden mt-15">
-                    <p class="text-sm text-muted mb-10">Selecciona nueva fecha y hora:</p>
-                    <div class="form-row">
-                        <input type="date" id="reprogramar-date" class="form-control">
-                        <input type="time" id="reprogramar-time" class="form-control">
-                        <button id="btn-confirm-reprogramar" class="btn btn-primary btn-sm">Guardar</button>
-                    </div>
+
+            <div id="zona-reprogramar" class="hidden mt-20 p-20" style="background:rgba(0,0,0,0.3); border-radius:8px;">
+                <p class="text-sm mb-10">Nueva fecha y hora:</p>
+                <div class="flex-row">
+                    <input type="date" id="repro-fecha" class="input-estilo">
+                    <input type="time" id="repro-hora" class="input-estilo">
+                    <button class="btn btn-primary" onclick="guardarReprogramacion()">Guardar</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase JS SDKs -->
-    <script type="module" src="app.js"></script>
+    <!-- Custom JS (Normal script, no module!) -->
+    <script src="app.js"></script>
 </body>
 </html>

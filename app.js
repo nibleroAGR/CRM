@@ -1,580 +1,447 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-analytics.js";
-import { 
-    getAuth, 
-    signInWithEmailAndPassword, 
-    GoogleAuthProvider, 
-    signInWithPopup,
-    onAuthStateChanged,
-    signOut
-} from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { 
-    getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-
-// Your web app's Firebase configuration
+// Usando Firebase v8 / Compat (cargado via CDN en index.html)
 const firebaseConfig = {
-  apiKey: "AIzaSyCqTyb7FvBVRZKAnB_7g8VMvONfI7QKWjE",
-  authDomain: "crmv1-21322.firebaseapp.com",
-  databaseURL: "https://crmv1-21322-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "crmv1-21322",
-  storageBucket: "crmv1-21322.firebasestorage.app",
-  messagingSenderId: "892438558015",
-  appId: "1:892438558015:web:fccee492b12470628f8f8a",
-  measurementId: "G-7BYG21GK2T"
+    apiKey: "AIzaSyCqTyb7FvBVRZKAnB_7g8VMvONfI7QKWjE",
+    authDomain: "crmv1-21322.firebaseapp.com",
+    databaseURL: "https://crmv1-21322-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "crmv1-21322",
+    storageBucket: "crmv1-21322.firebasestorage.app",
+    messagingSenderId: "892438558015",
+    appId: "1:892438558015:web:fccee492b12470628f8f8a",
+    measurementId: "G-7BYG21GK2T"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Inicializar
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-// Global State
+// Variables globales
 let currentUser = null;
 let unsubscribes = [];
-let currentActiveTask = null; // Para el modal
+let tareaActiva = null;
 
-// UI Elements - Auth
-const loginSection = document.getElementById('login-section');
-const dashboardSection = document.getElementById('dashboard-section');
-const loginForm = document.getElementById('login-form');
-const btnGoogleLogin = document.getElementById('btn-google-login');
-const authError = document.getElementById('auth-error');
-const btnLogout = document.getElementById('btn-logout');
-const userNameDisplay = document.getElementById('user-name');
-
-// UI Elements - Navigation & Views
-const navItems = document.querySelectorAll('.side-nav li[data-target]');
-const moduleViews = document.querySelectorAll('.module-view');
-const dynamicModulesList = document.getElementById('dynamic-modules-list');
-const customLinksContainer = document.getElementById('custom-links-container');
-const iframeView = document.getElementById('view-iframe');
-const moduloIframe = document.getElementById('modulo-iframe');
-
-// UI Elements - Modals
-const modalTarea = document.getElementById('modal-tarea');
-const modalTareaClose = document.getElementById('modal-tarea-close');
-const modalObservacion = document.getElementById('modal-observacion');
-const modalHistorialObs = document.getElementById('modal-historial-observaciones');
-const btnConcluir = document.getElementById('btn-concluir');
-const btnReprogramar = document.getElementById('btn-reprogramar');
-const reprogramarZona = document.getElementById('reprogramar-zona');
-const btnConfirmReprogramar = document.getElementById('btn-confirm-reprogramar');
-
-// ==========================================
-// AUTHENTICATION
-// ==========================================
-onAuthStateChanged(auth, async (user) => {
+// ==========================
+// AUTENTICACIÓN
+// ==========================
+auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
-        showDashboard(user);
-        initDataListeners(user.uid);
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        document.getElementById('user-name').textContent = user.displayName || user.email.split('@')[0];
+        verVista('vista-tareas'); // Vista por defecto
+        iniciarListeners(user.uid);
     } else {
         currentUser = null;
-        showLogin();
-        clearListeners();
+        document.getElementById('login-section').classList.remove('hidden');
+        document.getElementById('dashboard-section').classList.add('hidden');
+        limpiarListeners();
     }
 });
 
-function showDashboard(user) {
-    loginSection.classList.add('hidden');
-    dashboardSection.classList.remove('hidden');
-    userNameDisplay.textContent = user.displayName || user.email.split('@')[0];
-    // Default view
-    switchView('view-tareas');
-}
-
-function showLogin() {
-    dashboardSection.classList.add('hidden');
-    loginSection.classList.remove('hidden');
-    authError.textContent = '';
-    if(loginForm) loginForm.reset();
-}
-
-// Google Login
-if(btnGoogleLogin) {
-    btnGoogleLogin.addEventListener('click', () => {
-        const provider = new GoogleAuthProvider();
-        signInWithPopup(auth, provider).catch(err => console.error(err));
+document.getElementById('login-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, pass).catch(err => {
+        document.getElementById('auth-error').textContent = "Credenciales inválidas.";
     });
-}
-if(btnLogout) btnLogout.addEventListener('click', () => signOut(auth));
+});
 
-// ==========================================
-// NAVIGATION LOGIC
-// ==========================================
-function switchView(targetId, iframeUrl = null) {
-    // Hide all
-    moduleViews.forEach(view => view.classList.add('hidden'));
+document.getElementById('btn-google-login').addEventListener('click', () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(err => console.error(err));
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+    auth.signOut();
+});
+
+// ==========================
+// NAVEGACIÓN
+// ==========================
+function verVista(idVista, urlIframe = null) {
+    // Ocultar todas las vistas
+    document.querySelectorAll('.vista-modulo').forEach(v => v.classList.add('hidden'));
     document.querySelectorAll('.side-nav li').forEach(li => li.classList.remove('active'));
     
-    // Show target
-    const targetView = document.getElementById(targetId);
-    if(targetView) targetView.classList.remove('hidden');
+    // Mostrar objetivo
+    const vista = document.getElementById(idVista);
+    if(vista) vista.classList.remove('hidden');
     
-    // Activate nav item
-    const navItem = document.querySelector(`.side-nav li[data-target="${targetId}"]`);
-    if(navItem) navItem.classList.add('active');
+    // Marcar menú activo (esto es un poco manual por la estructura onClick en HTML)
+    const itemsMenu = document.querySelectorAll('.side-nav li');
+    itemsMenu.forEach(li => {
+        if(li.getAttribute('onclick') && li.getAttribute('onclick').includes(idVista)) {
+            li.classList.add('active');
+        }
+    });
 
-    // Handle Iframe special case
-    if(targetId === 'view-iframe' && iframeUrl) {
-        moduloIframe.src = iframeUrl;
+    if (idVista === 'vista-iframe' && urlIframe) {
+        document.getElementById('iframe-app').src = urlIframe;
     } else {
-        moduloIframe.src = "";
+        document.getElementById('iframe-app').src = "";
     }
 }
 
-// Fixed Nav listeners
-navItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-        e.preventDefault();
-        switchView(item.getAttribute('data-target'));
-    });
-});
+window.verVista = verVista; // Hacerlo global para los onclick de HTML
 
-// ==========================================
-// DATA LISTENING (Firestore)
-// ==========================================
-function clearListeners() {
-    unsubscribes.forEach(unsub => unsub());
+// ==========================
+// LISTENERS (Tiempo Real)
+// ==========================
+function limpiarListeners() {
+    unsubscribes.forEach(u => u());
     unsubscribes = [];
 }
 
-function initDataListeners(uid) {
-    clearListeners();
-    const userRef = doc(db, 'users', uid);
-    
-    // 1. Modulos
-    const qModules = query(collection(userRef, 'modules'));
-    unsubscribes.push(onSnapshot(qModules, snapshot => {
-        renderModulos(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
+let datosTareas = [];
+let datosProgramadas = [];
+
+function iniciarListeners(uid) {
+    limpiarListeners();
+    const userRef = db.collection('users').doc(uid);
+
+    // 1. Módulos Personalizados
+    unsubscribes.push(userRef.collection('modules').onSnapshot(snap => {
+        const modulos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderizarModulos(modulos);
     }));
 
     // 2. Enlaces
-    const qLinks = query(collection(userRef, 'links'));
-    unsubscribes.push(onSnapshot(qLinks, snapshot => {
-        renderEnlaces(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
+    unsubscribes.push(userRef.collection('links').onSnapshot(snap => {
+        const enlaces = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderizarEnlaces(enlaces);
     }));
 
     // 3. Tareas Diarias
-    const qTareas = query(collection(userRef, 'tasks'));
-    unsubscribes.push(onSnapshot(qTareas, snapshot => {
-        renderTareas(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
-        updateAgenda(); // Agenda uses multiple collections
+    unsubscribes.push(userRef.collection('tasks').onSnapshot(snap => {
+        datosTareas = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderizarTareasCentral();
+        actualizarAgenda();
     }));
 
     // 4. Programadas
-    const qProg = query(collection(userRef, 'scheduledTasks'));
-    unsubscribes.push(onSnapshot(qProg, snapshot => {
-        renderProgramadas(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
-        updateAgenda();
+    unsubscribes.push(userRef.collection('scheduled').onSnapshot(snap => {
+        datosProgramadas = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderizarProgramadasCentral();
+        actualizarAgenda();
     }));
 
     // 5. Historial
-    const qHist = query(collection(userRef, 'history'), orderBy('completedAt', 'desc'));
-    unsubscribes.push(onSnapshot(qHist, snapshot => {
-        renderHistorial(snapshot.docs.map(d => ({id: d.id, ...d.data()})));
+    unsubscribes.push(userRef.collection('history').orderBy('fecha', 'desc').onSnapshot(snap => {
+        const hist = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        renderizarHistorial(hist);
     }));
 }
 
-// ==========================================
-// RENDER FUNCTIONS & CRUD LOGIC
-// ==========================================
+// ==========================
+// FUNCIONES CRUD Y RENDER
+// ==========================
 
 // --- MÓDULOS ---
-document.getElementById('form-modulo').addEventListener('submit', async (e) => {
+document.getElementById('form-modulo').addEventListener('submit', (e) => {
     e.preventDefault();
     if(!currentUser) return;
     const data = {
-        icon: document.getElementById('modulo-icon').value,
-        name: document.getElementById('modulo-name').value,
+        icon: document.getElementById('modulo-icono').value,
+        name: document.getElementById('modulo-nombre').value,
         url: document.getElementById('modulo-url').value,
-        isActive: true
+        activo: true
     };
-    await addDoc(collection(db, 'users', currentUser.uid, 'modules'), data);
+    db.collection('users').doc(currentUser.uid).collection('modules').add(data);
     e.target.reset();
 });
 
-function renderModulos(modules) {
-    const grid = document.getElementById('modulos-grid');
-    dynamicModulesList.innerHTML = '';
-    grid.innerHTML = '';
+function renderizarModulos(modulos) {
+    const listaNav = document.getElementById('lista-modulos-dinamicos');
+    const gridAjustes = document.getElementById('contenedor-modulos');
+    listaNav.innerHTML = '';
+    gridAjustes.innerHTML = '';
 
-    modules.forEach(mod => {
-        // Nav Item (if active)
-        if(mod.isActive) {
+    modulos.forEach(mod => {
+        // En el menú izquierdo
+        if(mod.activo) {
             const li = document.createElement('li');
             li.innerHTML = `<a href="#"><i class="${mod.icon}"></i> ${mod.name}</a>`;
-            li.addEventListener('click', (e) => {
-                e.preventDefault();
-                // Find all li and remove active
-                document.querySelectorAll('.side-nav li').forEach(l => l.classList.remove('active'));
-                li.classList.add('active');
-                switchView('view-iframe', mod.url);
-            });
-            dynamicModulesList.appendChild(li);
+            li.onclick = () => verVista('vista-iframe', mod.url);
+            listaNav.appendChild(li);
         }
 
-        // Grid Card
-        const card = document.createElement('div');
-        card.className = 'module-card glass-panel';
-        card.innerHTML = `
-            <div class="module-icon"><i class="${mod.icon}"></i></div>
-            <div class="module-info">
-                <h3>${mod.name}</h3>
-                <p><a href="${mod.url}" target="_blank" class="text-muted"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ver enlace</a></p>
-                <div class="module-controls">
-                    <label class="switch">
-                        <input type="checkbox" ${mod.isActive ? 'checked' : ''} onchange="toggleModule('${mod.id}', this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                    <button class="btn-icon" onclick="deleteModule('${mod.id}')"><i class="fa-solid fa-trash"></i></button>
-                </div>
+        // En la vista de ajustes
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'tarjeta-modulo';
+        tarjeta.innerHTML = `
+            <i class="${mod.icon}"></i>
+            <h4 class="mb-10">${mod.name}</h4>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label class="switch">
+                    <input type="checkbox" ${mod.activo ? 'checked' : ''} onchange="toggleModulo('${mod.id}', this.checked)">
+                    <span class="slider"></span>
+                </label>
+                <button class="btn-icon" onclick="borrarModulo('${mod.id}')"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
-        grid.appendChild(card);
+        gridAjustes.appendChild(tarjeta);
     });
 }
-window.toggleModule = (id, isActive) => updateDoc(doc(db, 'users', currentUser.uid, 'modules', id), {isActive});
-window.deleteModule = (id) => { if(confirm('¿Eliminar módulo?')) deleteDoc(doc(db, 'users', currentUser.uid, 'modules', id)); };
+window.toggleModulo = (id, activo) => db.collection('users').doc(currentUser.uid).collection('modules').doc(id).update({activo});
+window.borrarModulo = (id) => { if(confirm('¿Borrar módulo?')) db.collection('users').doc(currentUser.uid).collection('modules').doc(id).delete(); };
 
 // --- ENLACES ---
-document.getElementById('form-enlace').addEventListener('submit', async (e) => {
+document.getElementById('form-enlace').addEventListener('submit', (e) => {
     e.preventDefault();
-    if(!currentUser) return;
     const data = {
-        name: document.getElementById('enlace-name').value,
+        name: document.getElementById('enlace-nombre').value,
         url: document.getElementById('enlace-url').value
     };
-    await addDoc(collection(db, 'users', currentUser.uid, 'links'), data);
+    db.collection('users').doc(currentUser.uid).collection('links').add(data);
     e.target.reset();
 });
 
-function renderEnlaces(links) {
-    const listCenter = document.getElementById('enlaces-list-center');
-    listCenter.innerHTML = '';
-    customLinksContainer.innerHTML = '';
+function renderizarEnlaces(enlaces) {
+    const listaIzquierda = document.getElementById('lista-enlaces-dinamicos');
+    const contenedorCentro = document.getElementById('contenedor-enlaces');
+    listaIzquierda.innerHTML = '';
+    contenedorCentro.innerHTML = '';
 
-    links.forEach(link => {
-        // Nav Button
-        const btn = document.createElement('a');
-        btn.href = link.url;
-        btn.target = "_blank";
-        btn.className = "link-btn";
-        btn.innerHTML = `<i class="fa-solid fa-globe"></i> ${link.name}`;
-        customLinksContainer.appendChild(btn);
-
-        // Center List
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerHTML = `
-            <div class="item-info">
-                <h4>${link.name}</h4>
-                <p><a href="${link.url}" target="_blank">${link.url}</a></p>
-            </div>
-            <div class="item-actions">
-                <button class="btn btn-danger btn-sm" onclick="deleteLink('${link.id}')"><i class="fa-solid fa-trash"></i> Eliminar</button>
+    enlaces.forEach(link => {
+        listaIzquierda.innerHTML += `<a href="${link.url}" target="_blank"><i class="fa-solid fa-globe"></i> ${link.name}</a>`;
+        
+        contenedorCentro.innerHTML += `
+            <div class="fila-item">
+                <div>
+                    <h4>${link.name}</h4>
+                    <a href="${link.url}" target="_blank" class="text-sm">${link.url}</a>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="borrarEnlace('${link.id}')"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
-        listCenter.appendChild(item);
     });
 }
-window.deleteLink = (id) => { if(confirm('¿Eliminar enlace?')) deleteDoc(doc(db, 'users', currentUser.uid, 'links', id)); };
+window.borrarEnlace = (id) => { if(confirm('¿Borrar enlace?')) db.collection('users').doc(currentUser.uid).collection('links').doc(id).delete(); };
 
 // --- TAREAS DIARIAS ---
-document.getElementById('form-tarea').addEventListener('submit', async (e) => {
+document.getElementById('form-tarea').addEventListener('submit', (e) => {
     e.preventDefault();
-    if(!currentUser) return;
     const data = {
-        name: document.getElementById('tarea-name').value,
-        time: document.getElementById('tarea-time').value,
-        observations: [],
-        lastCompletedDate: null,
-        type: 'daily'
+        name: document.getElementById('tarea-nombre').value,
+        time: document.getElementById('tarea-hora').value,
+        lastCompleted: null,
+        observaciones: [],
+        tipo: 'diaria'
     };
-    await addDoc(collection(db, 'users', currentUser.uid, 'tasks'), data);
+    db.collection('users').doc(currentUser.uid).collection('tasks').add(data);
     e.target.reset();
 });
 
-function renderTareas(tareas) {
-    const listCenter = document.getElementById('tareas-list-center');
-    listCenter.innerHTML = '';
-    tareas.forEach(tarea => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerHTML = `
-            <div class="item-info">
-                <h4>${tarea.name}</h4>
-                <p><i class="fa-regular fa-clock"></i> ${tarea.time} - Recurrente diaria</p>
-            </div>
-            <div class="item-actions">
-                <button class="btn btn-danger btn-sm" onclick="deleteTask('${tarea.id}')"><i class="fa-solid fa-trash"></i></button>
+function renderizarTareasCentral() {
+    const cont = document.getElementById('contenedor-tareas');
+    cont.innerHTML = '';
+    datosTareas.forEach(t => {
+        cont.innerHTML += `
+            <div class="fila-item">
+                <div><h4>${t.name}</h4><p class="text-sm text-muted"><i class="fa-regular fa-clock"></i> ${t.time}</p></div>
+                <button class="btn btn-danger btn-sm" onclick="borrarTarea('${t.id}')"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
-        listCenter.appendChild(item);
     });
 }
-window.deleteTask = (id) => { if(confirm('¿Eliminar tarea diaria permanentemente?')) deleteDoc(doc(db, 'users', currentUser.uid, 'tasks', id)); };
+window.borrarTarea = (id) => { if(confirm('¿Borrar tarea diaria permanentemente?')) db.collection('users').doc(currentUser.uid).collection('tasks').doc(id).delete(); };
 
 // --- PROGRAMADAS ---
-document.getElementById('form-programada').addEventListener('submit', async (e) => {
+document.getElementById('form-programada').addEventListener('submit', (e) => {
     e.preventDefault();
-    if(!currentUser) return;
     const data = {
-        name: document.getElementById('prog-name').value,
-        date: document.getElementById('prog-date').value,
-        time: document.getElementById('prog-time').value,
-        observations: [],
-        type: 'prog'
+        name: document.getElementById('prog-nombre').value,
+        date: document.getElementById('prog-fecha').value,
+        time: document.getElementById('prog-hora').value,
+        observaciones: [],
+        tipo: 'programada'
     };
-    await addDoc(collection(db, 'users', currentUser.uid, 'scheduledTasks'), data);
+    db.collection('users').doc(currentUser.uid).collection('scheduled').add(data);
     e.target.reset();
 });
 
-function renderProgramadas(prog) {
-    const listCenter = document.getElementById('programadas-list-center');
-    listCenter.innerHTML = '';
-    prog.forEach(p => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerHTML = `
-            <div class="item-info">
-                <h4>${p.name}</h4>
-                <p><i class="fa-regular fa-calendar"></i> ${p.date} a las ${p.time}</p>
-            </div>
-            <div class="item-actions">
-                <button class="btn btn-danger btn-sm" onclick="deleteProg('${p.id}')"><i class="fa-solid fa-trash"></i></button>
+function renderizarProgramadasCentral() {
+    const cont = document.getElementById('contenedor-programadas');
+    cont.innerHTML = '';
+    datosProgramadas.forEach(p => {
+        cont.innerHTML += `
+            <div class="fila-item">
+                <div><h4>${p.name}</h4><p class="text-sm text-muted"><i class="fa-regular fa-calendar"></i> ${p.date} - ${p.time}</p></div>
+                <button class="btn btn-danger btn-sm" onclick="borrarProg('${p.id}')"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
-        listCenter.appendChild(item);
     });
 }
-window.deleteProg = (id) => { if(confirm('¿Eliminar evento programado?')) deleteDoc(doc(db, 'users', currentUser.uid, 'scheduledTasks', id)); };
+window.borrarProg = (id) => { if(confirm('¿Borrar programada?')) db.collection('users').doc(currentUser.uid).collection('scheduled').doc(id).delete(); };
 
 // --- HISTORIAL ---
-function renderHistorial(hist) {
-    const listCenter = document.getElementById('historial-list');
-    listCenter.innerHTML = '';
+function renderizarHistorial(hist) {
+    const cont = document.getElementById('contenedor-historial');
+    cont.innerHTML = '';
     hist.forEach(h => {
-        const date = h.completedAt ? new Date(h.completedAt.toMillis()).toLocaleString() : 'Desconocida';
-        const typeBadge = h.type === 'daily' ? 'Diaria' : 'Programada';
-        
-        // Format observations
+        const fechaFormat = h.fecha ? new Date(h.fecha.toMillis()).toLocaleString() : '';
+        const badge = h.tipo === 'diaria' ? 'Diaria' : 'Prog.';
         let obsHtml = '';
-        if(h.observations && h.observations.length > 0) {
-            obsHtml = '<div class="mt-15" style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;"><strong>Observaciones:</strong><ul style="margin-left:20px; font-size:0.85rem;">';
-            h.observations.forEach(o => obsHtml += `<li><span class="text-muted">[${o.date}]</span> ${o.text}</li>`);
+        if(h.observaciones && h.observaciones.length > 0) {
+            obsHtml = '<div style="margin-top:10px; font-size:0.85rem; color:#94a3b8;"><strong>Obs:</strong><ul>';
+            h.observaciones.forEach(o => obsHtml += `<li>[${o.fecha}] ${o.texto}</li>`);
             obsHtml += '</ul></div>';
         }
-
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.style.flexDirection = 'column';
-        item.style.alignItems = 'flex-start';
-        item.innerHTML = `
-            <div style="display:flex; justify-content:space-between; width:100%;">
-                <div class="item-info">
-                    <h4>${h.name} <span style="font-size:0.7rem; background:var(--accent-primary); padding:2px 6px; border-radius:4px;">${typeBadge}</span></h4>
-                    <p><i class="fa-solid fa-check text-success"></i> Concluida el: ${date}</p>
+        cont.innerHTML += `
+            <div class="fila-item" style="flex-direction:column; align-items:flex-start;">
+                <div class="w-100 flex-row" style="justify-content:space-between">
+                    <h4>${h.name} <span style="font-size:0.7rem; background:var(--accent-primary); padding:2px 6px; border-radius:4px;">${badge}</span></h4>
+                    <span class="text-sm text-success"><i class="fa-solid fa-check"></i> ${fechaFormat}</span>
                 </div>
+                ${obsHtml}
             </div>
-            ${obsHtml}
         `;
-        listCenter.appendChild(item);
     });
 }
 
-// ==========================================
-// AGENDA (RIGHT COLUMN) & MODALS
-// ==========================================
-// Keep global arrays for agenda to mix them
-let currentTasks = [];
-let currentProg = [];
-
-// Hook into onSnapshot data
-const userRefTasks = currentUser ? collection(db, 'users', currentUser.uid, 'tasks') : null;
-if(userRefTasks) {
-    // Actually we hooked earlier, so we will just fetch them inside updateAgenda from Firestore directly or store them in variables.
-    // Let's store them in global vars during render functions.
-}
-// We will modify renderTareas and renderProgramadas to also store data
-const originalRenderTareas = renderTareas;
-renderTareas = (tareas) => { currentTasks = tareas; originalRenderTareas(tareas); };
-const originalRenderProg = renderProgramadas;
-renderProgramadas = (prog) => { currentProg = prog; originalRenderProg(prog); };
-
-function updateAgenda() {
-    const container = document.getElementById('agenda-container');
-    container.innerHTML = '';
+// ==========================
+// AGENDA (DERECHA) Y MODAL
+// ==========================
+function actualizarAgenda() {
+    const cont = document.getElementById('agenda-contenedor');
+    cont.innerHTML = '';
     
-    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    
-    let agendaItems = [];
+    // Obtener "Hoy" (YYYY-MM-DD local)
+    const hoyStr = new Date().toLocaleDateString('en-CA'); // Usa YYYY-MM-DD según local
 
-    // Add daily tasks (only if not completed today)
-    currentTasks.forEach(t => {
-        if(t.lastCompletedDate !== todayStr) {
-            agendaItems.push({
-                ...t,
-                sortDate: todayStr, // Always appears today
-                isDaily: true
-            });
+    let itemsAgenda = [];
+
+    datosTareas.forEach(t => {
+        if(t.lastCompleted !== hoyStr) {
+            itemsAgenda.push({ ...t, fOrden: hoyStr, esDiaria: true }); // Siempre aparecen "Hoy"
         }
     });
 
-    // Add programmed tasks
-    currentProg.forEach(p => {
-        agendaItems.push({
-            ...p,
-            sortDate: p.date,
-            isDaily: false
-        });
+    datosProgramadas.forEach(p => {
+        itemsAgenda.push({ ...p, fOrden: p.date, esDiaria: false });
     });
 
-    // Sort by Date then Time
-    agendaItems.sort((a, b) => {
-        if(a.sortDate === b.sortDate) {
-            return a.time.localeCompare(b.time);
-        }
-        return a.sortDate.localeCompare(b.sortDate);
+    // Ordenar por Fecha y Hora
+    itemsAgenda.sort((a, b) => {
+        if(a.fOrden === b.fOrden) return a.time.localeCompare(b.time);
+        return a.fOrden.localeCompare(b.fOrden);
     });
 
-    // Group by Date
-    const grouped = {};
-    agendaItems.forEach(item => {
-        if(!grouped[item.sortDate]) grouped[item.sortDate] = [];
-        grouped[item.sortDate].push(item);
+    // Agrupar
+    const grupos = {};
+    itemsAgenda.forEach(item => {
+        if(!grupos[item.fOrden]) grupos[item.fOrden] = [];
+        grupos[item.fOrden].push(item);
     });
 
-    // Render
-    for(const [dateStr, items] of Object.entries(grouped)) {
-        // Header
-        let displayDate = dateStr === todayStr ? "Hoy" : dateStr;
-        const groupDiv = document.createElement('div');
-        groupDiv.className = 'agenda-day';
-        groupDiv.innerHTML = `<h4>${displayDate}</h4>`;
+    // Renderizar
+    for(const [fecha, items] of Object.entries(grupos)) {
+        let etiquetaFecha = fecha === hoyStr ? "Hoy" : fecha;
+        const divGrupo = document.createElement('div');
+        divGrupo.className = 'agenda-dia';
+        divGrupo.innerHTML = `<h4>${etiquetaFecha}</h4>`;
 
         items.forEach(item => {
+            const clase = item.esDiaria ? 'diaria' : 'prog';
             const card = document.createElement('div');
-            card.className = `task-card ${item.isDaily ? 'daily' : 'prog'}`;
-            card.innerHTML = `
-                <div class="task-header">
-                    <strong>${item.name}</strong>
-                    <span class="task-time">${item.time}</span>
-                </div>
-            `;
-            card.addEventListener('click', () => openModal(item));
-            groupDiv.appendChild(card);
+            card.className = `tarea-tarjeta ${clase}`;
+            card.innerHTML = `<strong>${item.name}</strong> <span>${item.time}</span>`;
+            
+            // Usamos un closure para pasar el item correcto al onclick
+            card.onclick = function() { abrirModal(item); };
+            
+            divGrupo.appendChild(card);
         });
-        
-        container.appendChild(groupDiv);
+        cont.appendChild(divGrupo);
     }
 
-    if(agendaItems.length === 0) {
-        container.innerHTML = '<p class="text-sm text-muted">No hay tareas pendientes.</p>';
+    if(itemsAgenda.length === 0) {
+        cont.innerHTML = '<p class="text-muted text-sm text-center">No hay tareas pendientes.</p>';
     }
 }
 
-// --- MODAL LOGIC ---
-function openModal(task) {
-    currentActiveTask = task;
-    document.getElementById('modal-tarea-title').textContent = task.name;
-    modalObservacion.value = '';
-    reprogramarZona.classList.add('hidden');
+// --- LOGICA MODAL ---
+function abrirModal(tarea) {
+    tareaActiva = tarea;
+    document.getElementById('modal-titulo').textContent = tarea.name;
+    document.getElementById('modal-observacion').value = '';
+    document.getElementById('zona-reprogramar').classList.add('hidden');
     
-    // Render History of observations
-    modalHistorialObs.innerHTML = '';
-    if(task.observations && task.observations.length > 0) {
-        task.observations.forEach(obs => {
-            modalHistorialObs.innerHTML += `
-                <div class="obs-item">
-                    <span class="obs-date">${obs.date}</span>
-                    ${obs.text}
-                </div>
-            `;
+    // Render observaciones previas
+    const contObs = document.getElementById('modal-historial-obs');
+    contObs.innerHTML = '';
+    if(tarea.observaciones && tarea.observaciones.length > 0) {
+        tarea.observaciones.forEach(o => {
+            contObs.innerHTML += `<div class="obs-linea"><span class="text-muted text-sm">${o.fecha}</span><br>${o.texto}</div>`;
         });
     }
 
-    // Set reprogramar inputs to current task values
-    document.getElementById('reprogramar-date').value = task.sortDate;
-    document.getElementById('reprogramar-time').value = task.time;
+    // Preparar inputs de reprogramar
+    document.getElementById('repro-fecha').value = tarea.fOrden;
+    document.getElementById('repro-hora').value = tarea.time;
 
-    modalTarea.classList.remove('hidden');
+    document.getElementById('modal-tarea').classList.remove('hidden');
 }
 
-modalTareaClose.addEventListener('click', () => modalTarea.classList.add('hidden'));
+window.cerrarModal = () => {
+    document.getElementById('modal-tarea').classList.add('hidden');
+    tareaActiva = null;
+};
 
-btnReprogramar.addEventListener('click', () => {
-    reprogramarZona.classList.toggle('hidden');
-});
+window.mostrarReprogramar = () => {
+    document.getElementById('zona-reprogramar').classList.toggle('hidden');
+};
 
-btnConfirmReprogramar.addEventListener('click', async () => {
-    if(!currentActiveTask) return;
-    const newDate = document.getElementById('reprogramar-date').value;
-    const newTime = document.getElementById('reprogramar-time').value;
-    const obsText = modalObservacion.value.trim();
+window.guardarReprogramacion = () => {
+    if(!tareaActiva) return;
+    const nf = document.getElementById('repro-fecha').value;
+    const nh = document.getElementById('repro-hora').value;
+    const obsVal = document.getElementById('modal-observacion').value.trim();
 
-    let newObsArray = currentActiveTask.observations || [];
-    if(obsText) {
-        newObsArray.push({
-            date: new Date().toLocaleString(),
-            text: `Reprogramado a ${newDate} ${newTime}: ${obsText}`
-        });
-    } else {
-        newObsArray.push({
-            date: new Date().toLocaleString(),
-            text: `Reprogramado a ${newDate} ${newTime}`
-        });
-    }
-
-    const docRef = doc(db, 'users', currentUser.uid, currentActiveTask.isDaily ? 'tasks' : 'scheduledTasks', currentActiveTask.id);
+    let arrObs = tareaActiva.observaciones || [];
+    let textoAgregado = `Reprogramado a ${nf} ${nh}`;
+    if(obsVal) textoAgregado += `: ${obsVal}`;
     
-    if(currentActiveTask.isDaily) {
-        // For daily tasks, Reprogramming just changes the default time. Date doesn't make sense since it's daily.
-        await updateDoc(docRef, { time: newTime, observations: newObsArray });
-    } else {
-        await updateDoc(docRef, { date: newDate, time: newTime, observations: newObsArray });
-    }
+    arrObs.push({ fecha: new Date().toLocaleString(), texto: textoAgregado });
 
-    modalTarea.classList.add('hidden');
-});
-
-btnConcluir.addEventListener('click', async () => {
-    if(!currentActiveTask) return;
-    const todayStr = new Date().toISOString().split('T')[0];
-    const obsText = modalObservacion.value.trim();
+    const docRef = db.collection('users').doc(currentUser.uid).collection(tareaActiva.esDiaria ? 'tasks' : 'scheduled').doc(tareaActiva.id);
     
-    let newObsArray = currentActiveTask.observations || [];
-    if(obsText) {
-        newObsArray.push({
-            date: new Date().toLocaleString(),
-            text: obsText
-        });
+    if(tareaActiva.esDiaria) {
+        docRef.update({ time: nh, observaciones: arrObs });
+    } else {
+        docRef.update({ date: nf, time: nh, observaciones: arrObs });
     }
 
-    // 1. Send to History
-    await addDoc(collection(db, 'users', currentUser.uid, 'history'), {
-        name: currentActiveTask.name,
-        type: currentActiveTask.type,
-        observations: newObsArray,
-        completedAt: serverTimestamp()
+    cerrarModal();
+};
+
+window.concluirTarea = () => {
+    if(!tareaActiva) return;
+    const hoyStr = new Date().toLocaleDateString('en-CA');
+    const obsVal = document.getElementById('modal-observacion').value.trim();
+    
+    let arrObs = tareaActiva.observaciones || [];
+    if(obsVal) arrObs.push({ fecha: new Date().toLocaleString(), texto: obsVal });
+
+    // Enviar a historial
+    db.collection('users').doc(currentUser.uid).collection('history').add({
+        name: tareaActiva.name,
+        tipo: tareaActiva.tipo,
+        observaciones: arrObs,
+        fecha: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    const docRef = doc(db, 'users', currentUser.uid, currentActiveTask.isDaily ? 'tasks' : 'scheduledTasks', currentActiveTask.id);
+    const docRef = db.collection('users').doc(currentUser.uid).collection(tareaActiva.esDiaria ? 'tasks' : 'scheduled').doc(tareaActiva.id);
 
-    // 2. Action based on type
-    if(currentActiveTask.isDaily) {
-        // Daily: Mark as completed today, clear observations for next time
-        await updateDoc(docRef, { 
-            lastCompletedDate: todayStr,
-            observations: [] // Cleared for the next day as requested
-        });
+    if(tareaActiva.esDiaria) {
+        // Limpiar para mañana y setear completado
+        docRef.update({ lastCompleted: hoyStr, observaciones: [] });
     } else {
-        // Scheduled: Delete forever
-        await deleteDoc(docRef);
+        // Eliminar programada
+        docRef.delete();
     }
 
-    modalTarea.classList.add('hidden');
-});
+    cerrarModal();
+};
