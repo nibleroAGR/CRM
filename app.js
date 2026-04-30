@@ -268,18 +268,25 @@ window.borrarEnlace = (id) => {
 };
 
 // --- TAREAS DIARIAS ---
-document.getElementById('form-tarea').addEventListener('submit', (e) => {
+document.getElementById('form-tarea').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const data = {
-        name: document.getElementById('tarea-nombre').value.trim(),
-        time: document.getElementById('tarea-hora').value,
-        lastCompleted: null,
-        observaciones: [],
-        tipo: 'diaria'
-    };
-    db.collection('users').doc(currentUser.uid).collection('tasks').add(data)
-        .then(() => showToast('Tarea diaria añadida', 'success'));
-    e.target.reset();
+    if(!currentUser) return showToast('Error: Usuario no autenticado', 'error');
+    
+    try {
+        const data = {
+            name: document.getElementById('tarea-nombre').value.trim(),
+            time: document.getElementById('tarea-hora').value || '00:00',
+            lastCompleted: null,
+            observaciones: [],
+            tipo: 'diaria'
+        };
+        await db.collection('users').doc(currentUser.uid).collection('tasks').add(data);
+        showToast('Tarea diaria añadida', 'success');
+        e.target.reset();
+    } catch (err) {
+        console.error("Error añadiendo tarea:", err);
+        showToast('Error: ' + err.message, 'error');
+    }
 });
 
 function renderizarTareasCentral() {
@@ -303,18 +310,25 @@ window.borrarTarea = (id) => {
 };
 
 // --- PROGRAMADAS ---
-document.getElementById('form-programada').addEventListener('submit', (e) => {
+document.getElementById('form-programada').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const data = {
-        name: document.getElementById('prog-nombre').value.trim(),
-        date: document.getElementById('prog-fecha').value,
-        time: document.getElementById('prog-hora').value,
-        observaciones: [],
-        tipo: 'programada'
-    };
-    db.collection('users').doc(currentUser.uid).collection('scheduled').add(data)
-        .then(() => showToast('Tarea programada añadida', 'success'));
-    e.target.reset();
+    if(!currentUser) return showToast('Error: Usuario no autenticado', 'error');
+
+    try {
+        const data = {
+            name: document.getElementById('prog-nombre').value.trim(),
+            date: document.getElementById('prog-fecha').value,
+            time: document.getElementById('prog-hora').value || '00:00',
+            observaciones: [],
+            tipo: 'programada'
+        };
+        await db.collection('users').doc(currentUser.uid).collection('scheduled').add(data);
+        showToast('Tarea programada añadida', 'success');
+        e.target.reset();
+    } catch (err) {
+        console.error("Error añadiendo programada:", err);
+        showToast('Error: ' + err.message, 'error');
+    }
 });
 
 function renderizarProgramadasCentral() {
@@ -384,10 +398,16 @@ function actualizarAgenda() {
         itemsAgenda.push({ ...p, fOrden: p.date, esDiaria: false });
     });
 
-    // Ordenar cronológicamente
+    // Ordenar cronológicamente de forma segura
     itemsAgenda.sort((a, b) => {
-        if(a.fOrden === b.fOrden) return a.time.localeCompare(b.time);
-        return a.fOrden.localeCompare(b.fOrden);
+        const fA = a.fOrden || '';
+        const fB = b.fOrden || '';
+        if(fA === fB) {
+            const tA = a.time || '';
+            const tB = b.time || '';
+            return tA.localeCompare(tB);
+        }
+        return fA.localeCompare(fB);
     });
 
     // Agrupar por día
