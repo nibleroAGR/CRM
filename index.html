@@ -3,624 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Megasur | Operaciones</title>
+    <title>CRM Profesional</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <style>
-        :root {
-            --sidebar-bg: #0f172a; --main-bg: #f8fafc; --accent: #6366f1;
-            --fixed-pastel: #fefce8; --sched-pastel: #f0f9ff; --late-pastel: #fff1f2;
-            --danger: #e11d48; --warning: #f59e0b; --success: #10b981;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body, html { margin: 0; height: 100vh; background: var(--main-bg); color: #1e293b; overflow: hidden; }
-        .app-shell { display: flex; height: 100%; }
-
-        /* Sidebar */
-        .sidebar { width: 250px; background: var(--sidebar-bg); color: white; padding: 1rem; display: flex; flex-direction: column; z-index: 10; }
-        .nav-btn { background: transparent; border: none; color: #94a3b8; padding: 8px 12px; text-align: left; cursor: pointer; border-radius: 8px; font-size: 0.85rem; transition: var(--transition); display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 2px; }
-        .nav-btn:hover { background: rgba(255,255,255,0.08); color: white; transform: translateX(5px); }
-        .sidebar-footer { margin-top: auto; padding-top: 0.8rem; border-top: 1px solid #334155; display: flex; flex-direction: column; gap: 5px; }
-
-        /* ─── Auth (reemplaza user-input-box) ─── */
-        .auth-box { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 8px; border: 1px solid #334155; display: flex; flex-direction: column; gap: 6px; }
-        .auth-box input { background: rgba(255,255,255,0.05); border: 1px solid #334155; color: white; font-size: 0.8rem; outline: none; padding: 7px 10px; border-radius: 6px; width: 100%; font-family: inherit; }
-        .auth-box input::placeholder { color: #475569; }
-        .auth-box input:focus { border-color: var(--accent); }
-        .btn-google { background: white; color: #3c4043; border: 1px solid #dadce0; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: var(--transition); font-family: inherit; }
-        .btn-google:hover { background: #f8f9fa; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
-        .btn-auth { background: var(--accent); color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.78rem; transition: var(--transition); font-family: inherit; }
-        .btn-auth:hover { opacity: 0.9; }
-        .btn-auth-outline { background: transparent; color: #94a3b8; border: 1px solid #334155; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; transition: var(--transition); font-family: inherit; }
-        .btn-auth-outline:hover { border-color: #64748b; color: white; }
-        .auth-divider { display: flex; align-items: center; gap: 6px; color: #475569; font-size: 0.65rem; }
-        .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: #334155; }
-        .auth-error { background: rgba(225,29,72,0.15); color: #fca5a5; font-size: 0.68rem; padding: 5px 8px; border-radius: 5px; display: none; }
-        .auth-error.show { display: block; }
-
-        /* Usuario conectado en sidebar */
-        .user-connected { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(255,255,255,0.04); border-radius: 8px; border: 1px solid #334155; }
-        .user-connected img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
-        .user-connected .fallback-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: white; flex-shrink: 0; }
-        .user-connected .user-info { flex: 1; min-width: 0; }
-        .user-connected .user-name { font-size: 0.8rem; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .user-connected .user-email { font-size: 0.65rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .btn-signout { background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.75rem; padding: 4px; transition: var(--transition); }
-        .btn-signout:hover { color: #fca5a5; }
-
-        /* Workspace */
-        .workspace { flex: 1; padding: 2.5rem; overflow-y: auto; background: white; transition: padding 0.3s ease; }
-        h1 { font-size: 1.5rem; font-weight: 600; color: #0f172a; margin-bottom: 1.5rem; }
-
-        /* Feed Right */
-        .control-panel { width: 320px; border-left: 1px solid #e2e8f0; background: #fcfcfd; display: flex; flex-direction: column; }
-        .task-header { padding: 1.5rem; background: white; border-bottom: 1px solid #e2e8f0; }
-        .live-clock { font-size: 0.9rem; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; margin-top: 2px; }
-        .live-date { font-size: 0.75rem; color: #64748b; font-weight: 500; }
-        .user-badge { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block; }
-        .task-feed { padding: 1rem; overflow-y: auto; flex: 1; }
-
-        .date-separator { font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; padding: 15px 5px 8px 5px; letter-spacing: 1px; border-bottom: 1px solid #f1f5f9; margin-bottom: 10px; }
-        .card { padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid rgba(0,0,0,0.03); transition: var(--transition); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .card.fixed { background: var(--fixed-pastel); border-left: 5px solid #f59e0b; }
-        .card.scheduled { background: var(--sched-pastel); border-left: 5px solid #3b82f6; }
-        .card.late { background: var(--late-pastel) !important; border-left: 5px solid var(--danger) !important; }
-        .card h4 { margin: 0; font-size: 0.9rem; font-weight: 600; color: #1e293b; }
-        .card p { margin: 4px 0 0 0; font-size: 0.75rem; color: #64748b; font-weight: 500; }
-
-        /* Modals & Managers */
-        .module-card { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 10px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
-        .switch { position: relative; width: 40px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--accent); }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        #actionModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index:100; align-items:center; justify-content:center; }
-        .modal-body { background:white; padding:2rem; border-radius:20px; width:400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        input, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; outline: none; margin-bottom: 10px; font-size: 0.9rem; }
-        .btn-action { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; width: 100%; transition: var(--transition); }
-        .btn-delete { color: #e11d48; background: none; border: none; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
-        .manager-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 5px; }
-
-        .add-module-box { background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 2px dashed #cbd5e1; }
-        .help-link { color: var(--accent); font-size: 0.75rem; text-decoration: none; font-weight: 600; display: inline-block; margin-bottom: 10px; }
-        iframe { width: 100%; height: 80vh; border: none; border-radius: 12px; margin-top: 10px; }
-    </style>
 </head>
 <body>
 
-<div class="app-shell">
-    <aside class="sidebar">
-        <h2 style="font-size: 1rem; color: #818cf8; margin: 0 0 1.5rem 0.5rem; font-weight: 700;">CRM MEGASUR</h2>
-
-        <!-- Auth: sin sesión -->
-        <div id="authBox" class="auth-box">
-            <button class="btn-google" id="btnGoogle">
-                <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                Google
-            </button>
-            <div class="auth-divider">o correo</div>
-            <input type="email" id="authEmail" placeholder="correo@ejemplo.com">
-            <input type="password" id="authPass" placeholder="Contraseña">
-            <div class="auth-error" id="authError"></div>
-            <button class="btn-auth" id="btnEmailSignIn">Entrar</button>
-            <button class="btn-auth-outline" id="btnEmailSignUp">Crear cuenta nueva</button>
-        </div>
-
-        <!-- Auth: con sesión -->
-        <div id="userBox" class="user-connected" style="display:none">
-            <div class="fallback-avatar" id="userAvatar"></div>
-            <div class="user-info">
-                <div class="user-name" id="userName"></div>
-                <div class="user-email" id="userEmail"></div>
+    <!-- ==================== LOGIN SECTION ==================== -->
+    <div id="login-section" class="auth-wrapper">
+        <div class="glass-panel auth-panel">
+            <div class="logo">
+                <i class="fa-solid fa-chart-pie"></i>
+                <h2>CRM System</h2>
             </div>
-            <button class="btn-signout" id="btnSignOut" title="Cerrar sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
-        </div>
+            
+            <p class="subtitle">Accede a tu zona de trabajo</p>
 
-        <nav id="main-menu"></nav>
-        <div id="quickLinks" style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid #334155;"></div>
-        <div class="sidebar-footer">
-            <button class="nav-btn" onclick="ui.checkAccess(() => ui.renderModulesManager())"><span>🧩</span> Módulos</button>
-            <button class="nav-btn" onclick="ui.accessConfig()"><span>⚙️</span> Configuración</button>
-        </div>
-    </aside>
-
-    <main class="workspace" id="workspace">
-        <div id="ws-content">
-            <h1>Panel de Control</h1>
-            <p style="color:#64748b;">Inicia sesión para gestionar operaciones.</p>
-        </div>
-    </main>
-
-    <section class="control-panel">
-        <div class="task-header">
-            <span class="user-badge" id="activeUserBadge">Sincronización OFF</span>
-            <div id="liveDate" class="live-date">--/--/----</div>
-            <div id="liveClock" class="live-clock">00:00:00</div>
-        </div>
-        <div class="task-feed" id="taskFeed"></div>
-    </section>
-</div>
-
-<!-- Modal de Tareas -->
-<div id="actionModal">
-    <div class="modal-body">
-        <h3 id="m-taskName" style="margin-top: 0; margin-bottom: 1.5rem; color: #0f172a;"></h3>
-        <div id="completion-zone">
-            <textarea id="m-solution" rows="4" placeholder="Notas de la solución..."></textarea>
-            <button class="btn-action" onclick="app.completeTask()">Concluir Tarea</button>
-        </div>
-        <div id="reschedule-zone" style="display:none; margin-top:15px; padding-top:15px; border-top: 1px solid #f1f5f9;">
-            <input type="datetime-local" id="m-new-date">
-            <button class="btn-action" style="background: var(--warning);" onclick="app.rescheduleTask()">Confirmar Reprogramación</button>
-        </div>
-        <button id="btn-toggle-view" onclick="ui.toggleModalView()" style="width:100%; background:none; border:none; color:var(--accent); margin-top:20px; cursor:pointer; font-weight:600; font-size: 0.8rem;">🔄 REPROGRAMAR TAREA</button>
-        <button onclick="ui.closeModal()" style="width:100%; background:none; border:none; color:#94a3b8; margin-top:10px; cursor:pointer; font-size: 0.75rem; font-weight: 500;">CANCELAR</button>
-    </div>
-</div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, update, remove, set, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-    const firebaseConfig = {
-        apiKey: "AIzaSyCqTyb7FvBVRZKAnB_7g8VMvONfI7QKWjE",
-        authDomain: "crmv1-21322.firebaseapp.com",
-        databaseURL: "https://crmv1-21322-default-rtdb.firebaseio.com",
-        projectId: "crmv1-21322",
-        storageBucket: "crmv1-21322.firebasestorage.app",
-        messagingSenderId: "892438558015",
-        appId: "1:892438558015:web:fccee492b12470628f8f8a",
-        measurementId: "G-7BYG21GK2T"
-    };
-
-    const firebaseApp = initializeApp(firebaseConfig);
-    const db = getDatabase(firebaseApp);
-    const auth = getAuth(firebaseApp);
-    const googleProvider = new GoogleAuthProvider();
-
-    // Referencias para poder desconectar listeners
-    const activeListeners = [];
-
-    const app = {
-        currentUserId: null,
-        isConnected: false,
-        data: {},
-        links: {},
-        customModules: {},
-        defaultModules: [
-            { id: 'fixed', name: 'Tareas Fijas', icon: '📌', active: true, action: () => ui.renderFixedManager() },
-            { id: 'scheduled', name: 'Programación', icon: '⏰', active: true, action: () => ui.showForm('scheduled') },
-            { id: 'links', name: 'Enlaces', icon: '🔗', active: true, action: () => ui.showForm('links') }
-        ],
-        modules: [],
-        moduleSettings: [],
-
-        init() {
-            this.modules = JSON.parse(JSON.stringify(this.defaultModules));
-            setInterval(() => this.updateClock(), 1000);
-            Sortable.create(document.getElementById('main-menu'), { animation: 150, onEnd: () => ui.saveMenuOrder() });
-            Sortable.create(document.getElementById('quickLinks'), { animation: 150, onEnd: () => ui.saveLinksOrder() });
-
-            // Escuchar estado de auth (reemplaza al input + bolt)
-            onAuthStateChanged(auth, user => {
-                if (user) this.handleLogin(user);
-                else this.handleLogout();
-            });
-
-            // Botones de auth
-            document.getElementById('btnGoogle').addEventListener('click', () => this.signInGoogle());
-            document.getElementById('btnEmailSignIn').addEventListener('click', () => this.signInEmail());
-            document.getElementById('btnEmailSignUp').addEventListener('click', () => this.signUpEmail());
-            document.getElementById('btnSignOut').addEventListener('click', () => this.signOutUser());
-            document.getElementById('authPass').addEventListener('keydown', e => { if(e.key === 'Enter') this.signInEmail(); });
-        },
-
-        // ─── Auth methods ───
-        showAuthError(msg) {
-            const el = document.getElementById('authError');
-            el.textContent = msg; el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 4000);
-        },
-
-        async signInGoogle() {
-            try { await signInWithPopup(auth, googleProvider); }
-            catch(e) {
-                if(e.code === 'auth/popup-closed-by-user') return;
-                if(e.code === 'auth/unauthorized-domain') this.showAuthError('Dominio no autorizado en Firebase Console');
-                else this.showAuthError(e.message);
-            }
-        },
-
-        async signInEmail() {
-            const email = document.getElementById('authEmail').value.trim();
-            const pass = document.getElementById('authPass').value;
-            if(!email || !pass) { this.showAuthError('Correo y contraseña obligatorios'); return; }
-            try { await signInWithEmailAndPassword(auth, email, pass); }
-            catch(e) {
-                if(e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
-                    this.showAuthError('Correo o contraseña incorrectos');
-                else if(e.code === 'auth/invalid-email') this.showAuthError('Correo no válido');
-                else this.showAuthError(e.message);
-            }
-        },
-
-        async signUpEmail() {
-            const email = document.getElementById('authEmail').value.trim();
-            const pass = document.getElementById('authPass').value;
-            if(!email || !pass) { this.showAuthError('Correo y contraseña obligatorios'); return; }
-            if(pass.length < 6) { this.showAuthError('La contraseña debe tener al menos 6 caracteres'); return; }
-            try { await createUserWithEmailAndPassword(auth, email, pass); }
-            catch(e) {
-                if(e.code === 'auth/email-already-in-use') this.showAuthError('Este correo ya tiene una cuenta. Usa "Entrar".');
-                else if(e.code === 'auth/invalid-email') this.showAuthError('Correo no válido');
-                else if(e.code === 'auth/weak-password') this.showAuthError('Contraseña demasiado débil (mín. 6 caracteres)');
-                else this.showAuthError(e.message);
-            }
-        },
-
-        async signOutUser() {
-            try { await signOut(auth); } catch(e) {}
-        },
-
-        // ─── Conexión a BD (misma lógica original) ───
-        handleLogin(user) {
-            this.currentUserId = user.uid;
-            this.isConnected = true;
-
-            // UI: mostrar usuario, ocultar auth
-            document.getElementById('authBox').style.display = 'none';
-            document.getElementById('userBox').style.display = 'flex';
-            const name = user.displayName || user.email.split('@')[0];
-            const initials = name.substring(0, 2).toUpperCase();
-            document.getElementById('userAvatar').textContent = initials;
-            if(user.photoURL) {
-                document.getElementById('userAvatar').innerHTML = `<img src="${user.photoURL}" onerror="this.parentElement.textContent='${initials}'">`;
-            }
-            document.getElementById('userName').textContent = name;
-            document.getElementById('userEmail').textContent = user.email;
-            document.getElementById('activeUserBadge').innerText = "DB: " + user.uid.substring(0, 8) + "...";
-
-            // Limpiar listeners anteriores si reconecta
-            activeListeners.forEach(r => { try { off(r); } catch(e) {} });
-            activeListeners.length = 0;
-
-            // Mismos listeners que el original
-            const r1 = ref(db, `users/${user.uid}/tasks`);
-            const r2 = ref(db, `users/${user.uid}/links`);
-            const r3 = ref(db, `users/${user.uid}/custom_modules`);
-            const r4 = ref(db, `users/${user.uid}/settings/modules`);
-
-            onValue(r1, snap => {
-                this.data = snap.val() || {};
-                this.renderFeed();
-                if(document.getElementById('fixed-manager-list')) ui.refreshFixedList();
-                if(document.getElementById('scheduled-manager-list')) ui.refreshScheduledList();
-            });
-            onValue(r2, snap => {
-                this.links = snap.val() || {};
-                ui.renderLinks(this.links);
-                if(document.getElementById('link-list-manager')) ui.refreshLinkList();
-            });
-            onValue(r3, snap => {
-                this.customModules = snap.val() || {};
-                ui.refreshSidebar();
-            });
-            onValue(r4, snap => {
-                this.moduleSettings = snap.val() || [];
-                ui.refreshSidebar();
-            });
-
-            activeListeners.push(r1, r2, r3, r4);
-
-            // Registrar usuario en config
-            const now = new Date().toISOString();
-            update(ref(db, `config/users/${user.uid}`), {
-                name: user.displayName || '', email: user.email || '',
-                photo: user.photoURL || '', lastLogin: now
-            });
-
-            // Mostrar dashboard si estamos en la pantalla inicial
-            if(document.getElementById('ws-content')) {
-                document.getElementById('workspace').innerHTML = `
-                    <h1>Panel de Control</h1>
-                    <p style="color:#64748b;">Conectado como ${escHtml(name)}</p>`;
-            }
-        },
-
-        handleLogout() {
-            this.isConnected = false;
-            this.currentUserId = null;
-            this.data = {};
-            this.links = {};
-            this.customModules = {};
-            this.moduleSettings = [];
-
-            activeListeners.forEach(r => { try { off(r); } catch(e) {} });
-            activeListeners.length = 0;
-
-            document.getElementById('authBox').style.display = 'flex';
-            document.getElementById('userBox').style.display = 'none';
-            document.getElementById('taskFeed').innerHTML = "";
-            document.getElementById('main-menu').innerHTML = "";
-            document.getElementById('quickLinks').innerHTML = "";
-            document.getElementById('activeUserBadge').innerText = "Sincronización OFF";
-
-            document.getElementById('workspace').innerHTML = `
-                <h1>Panel de Control</h1>
-                <p style="color:#64748b;">Inicia sesión para gestionar operaciones.</p>`;
-        },
-
-        updateClock() {
-            const now = new Date();
-            document.getElementById('liveClock').innerText = now.toLocaleTimeString('es-ES');
-            document.getElementById('liveDate').innerText = now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-        },
-
-        // ─── Feed (idéntico al original) ───
-        renderFeed() {
-            const feed = document.getElementById('taskFeed');
-            const todayStr = new Date().toISOString().split('T')[0];
-            feed.innerHTML = "";
-            const tasks = Object.entries(this.data).map(([id, t]) => ({id, ...t}))
-                .filter(t => (t.type === 'scheduled' && !t.completed) || (t.type === 'fixed' && t.completedDate !== todayStr));
-            tasks.sort((a,b) => {
-                const dA = a.type === 'fixed' ? todayStr + 'T' + a.time : a.date;
-                const dB = b.type === 'fixed' ? todayStr + 'T' + b.time : b.date;
-                return dA.localeCompare(dB);
-            });
-            let lastL = "";
-            tasks.forEach(t => {
-                const tDate = t.type === 'fixed' ? todayStr : t.date.split('T')[0];
-                if (tDate !== lastL) {
-                    const s = document.createElement('div'); s.className = 'date-separator';
-                    s.innerText = tDate === todayStr ? "HOY" : new Date(tDate).toLocaleDateString();
-                    feed.appendChild(s); lastL = tDate;
-                }
-                let cls = t.type;
-                if(t.type === 'scheduled' && new Date(t.date) < new Date()) cls = 'late';
-                const el = document.createElement('div'); el.className = `card ${cls}`;
-                el.innerHTML = `<h4>${t.name || 'Sin nombre'}</h4><p>${t.type === 'fixed' ? '🕒 '+(t.time||'--:--') : '⏰ '+(t.date ? t.date.replace('T', ' ').substring(0,16) : '--:--')}</p>`;
-                el.onclick = () => ui.openAction(t.id, t);
-                feed.appendChild(el);
-            });
-        },
-
-        completeTask() {
-            const sol = document.getElementById('m-solution').value || "Hecho.";
-            const t = this.data[this.activeTaskId];
-            const up = { history: (t.history || "") + `\n[${new Date().toLocaleString()}] ${sol}`, completedDate: new Date().toISOString().split('T')[0] };
-            if(t.type === 'scheduled') up.completed = true;
-            update(ref(db, `users/${this.currentUserId}/tasks/${this.activeTaskId}`), up);
-            ui.closeModal();
-        },
-
-        rescheduleTask() {
-            const newDate = document.getElementById('m-new-date').value;
-            if(!newDate) return;
-            const t = this.data[this.activeTaskId];
-            const oldDate = t.date || '--';
-            update(ref(db, `users/${this.currentUserId}/tasks/${this.activeTaskId}`), {
-                date: newDate,
-                completed: false,
-                history: (t.history || "") + `\n[${new Date().toLocaleString()}] Reprogramada de ${oldDate} a ${newDate.replace('T',' ')}`
-            });
-            ui.closeModal();
-        }
-    };
-
-    function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-
-    window.ui = {
-        checkAccess(cb) { if(app.isConnected) cb(); else alert("Inicia sesión primero"); },
-        openAction(id, t) {
-            app.activeTaskId = id;
-            document.getElementById('m-taskName').innerText = t.name;
-            document.getElementById('m-solution').value = "";
-            document.getElementById('completion-zone').style.display = 'block';
-            document.getElementById('reschedule-zone').style.display = 'none';
-            document.getElementById('btn-toggle-view').innerText = '🔄 REPROGRAMAR TAREA';
-            document.getElementById('actionModal').style.display = 'flex';
-        },
-        closeModal() { document.getElementById('actionModal').style.display = 'none'; },
-        toggleModalView() {
-            const cz = document.getElementById('completion-zone');
-            const rz = document.getElementById('reschedule-zone');
-            const btn = document.getElementById('btn-toggle-view');
-            if(cz.style.display === 'none') {
-                cz.style.display = 'block'; rz.style.display = 'none';
-                btn.innerText = '🔄 REPROGRAMAR TAREA';
-            } else {
-                cz.style.display = 'none'; rz.style.display = 'block';
-                btn.innerText = '🔄 CONCLUIR TAREA';
-                if(!document.getElementById('m-new-date').value) {
-                    const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
-                    document.getElementById('m-new-date').value = n.toISOString().slice(0,16);
-                }
-            }
-        },
-
-        refreshSidebar() {
-            const menu = document.getElementById('main-menu'); menu.innerHTML = "";
-            app.defaultModules.forEach(m => {
-                const isHidden = (app.moduleSettings || []).find(s => s.id === m.id && s.active === false);
-                if(!isHidden) {
-                    const b = document.createElement('button'); b.className = "nav-btn"; b.dataset.id = m.id;
-                    b.innerHTML = `<span>${m.icon}</span> ${m.name}`;
-                    b.onclick = m.action;
-                    menu.appendChild(b);
-                }
-            });
-            Object.entries(app.customModules).forEach(([id, m]) => {
-                const b = document.createElement('button'); b.className = "nav-btn"; b.dataset.id = id;
-                const iconHtml = m.icon.includes('fa-') ? `<i class="${m.icon}"></i>` : `<span>${m.icon}</span>`;
-                b.innerHTML = `${iconHtml} ${m.name}`;
-                b.onclick = () => this.loadCustomModule(m.url, m.name);
-                menu.appendChild(b);
-            });
-        },
-
-        loadCustomModule(url, name) {
-            document.getElementById('workspace').innerHTML = `<h1>${name}</h1><iframe src="${url}"></iframe>`;
-        },
-
-        renderModulesManager() {
-            const ws = document.getElementById('workspace');
-            ws.innerHTML = `
-                <h1>🧩 Gestión de Módulos</h1>
-                <div class="add-module-box">
-                    <h3 style="margin:0 0 10px 0">Añadir Módulo Externo</h3>
-                    <a href="https://fontawesome.com/search?o=r&m=free" target="_blank" class="help-link">Encuentra iconos en FontAwesome ↗</a>
-                    <p style="font-size:0.7rem; color:#64748b; margin-bottom:10px">Indica el icono (ej: <b>fa-solid fa-database</b>), el nombre y la dirección web.</p>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 2fr; gap:8px">
-                        <input id="cm-icon" placeholder="Icono (fa-...)">
-                        <input id="cm-name" placeholder="Nombre">
-                        <input id="cm-url" placeholder="https://...">
-                    </div>
-                    <button class="btn-action" style="margin-top:10px" onclick="ui.addCustomModule()">+ Añadir</button>
+            <form id="login-form">
+                <div class="input-group">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="email" placeholder="Correo electrónico" required>
                 </div>
-                <div id="modules-list-admin"></div>
-            `;
-            this.refreshModulesAdminList();
-        },
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="password" placeholder="Contraseña" required>
+                </div>
+                <div id="auth-error" class="error-message"></div>
+                
+                <button type="submit" class="btn btn-primary" id="btn-login">
+                    Iniciar Sesión
+                </button>
+            </form>
 
-        refreshModulesAdminList() {
-            const list = document.getElementById('modules-list-admin'); list.innerHTML = "";
-            app.defaultModules.forEach(m => {
-                const setting = (app.moduleSettings || []).find(s => s.id === m.id) || {active: true};
-                list.innerHTML += `
-                    <div class="module-card">
-                        <span>${m.icon} ${m.name} (Sistema)</span>
-                        <label class="switch">
-                            <input type="checkbox" ${setting.active?'checked':''} onchange="ui.toggleModule('${m.id}')">
-                            <span class="slider"></span>
-                        </label>
-                    </div>`;
-            });
-            Object.entries(app.customModules).forEach(([id, m]) => {
-                list.innerHTML += `
-                    <div class="module-card">
-                        <span>${m.icon.includes('fa-') ? `<i class="${m.icon}"></i>` : m.icon} ${m.name}</span>
-                        <button class="btn-delete" onclick="ui.deleteCustomModule('${id}')">ELIMINAR</button>
-                    </div>`;
-            });
-        },
+            <div class="divider">
+                <span>O</span>
+            </div>
 
-        addCustomModule() {
-            const icon = document.getElementById('cm-icon').value || 'fa-solid fa-cube';
-            const name = document.getElementById('cm-name').value;
-            const url = document.getElementById('cm-url').value;
-            if(name && url) push(ref(db, `users/${app.currentUserId}/custom_modules`), { icon, name, url });
-            this.renderModulesManager();
-        },
+            <button class="btn btn-google" id="btn-google-login">
+                <i class="fa-brands fa-google"></i>
+                Continuar con Google
+            </button>
 
-        deleteCustomModule(id) {
-            if(confirm("¿Borrar este módulo definitivamente?")) remove(ref(db, `users/${app.currentUserId}/custom_modules/${id}`));
-        },
+            <div class="auth-footer">
+                <p>¿No tienes cuenta? <a href="#" id="show-register">Regístrate aquí</a></p>
+            </div>
+        </div>
+    </div>
 
-        toggleModule(id) {
-            const settings = app.moduleSettings || [];
-            const idx = settings.findIndex(s => s.id === id);
-            if(idx > -1) settings[idx].active = !settings[idx].active;
-            else settings.push({id, active: false});
-            set(ref(db, `users/${app.currentUserId}/settings/modules`), settings);
-        },
+    <!-- ==================== DASHBOARD SECTION ==================== -->
+    <div id="dashboard-section" class="dashboard-wrapper hidden">
+        
+        <!-- Navbar Superior (Mobile support / User profile) -->
+        <header class="topbar glass-panel">
+            <div class="logo-small">
+                <i class="fa-solid fa-chart-pie"></i> CRM
+            </div>
+            <div class="user-profile">
+                <span id="user-name">Usuario</span>
+                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                <button id="btn-logout" class="btn-icon" title="Cerrar sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+            </div>
+        </header>
 
-        renderFixedManager() {
-            const ws = document.getElementById('workspace');
-            ws.innerHTML = `<h1>📌 Tareas Fijas</h1><div style="background:#f8fafc; padding:20px; border-radius:15px; border:1px solid #e2e8f0; margin-bottom:20px;"><input id="fn" placeholder="Tarea fija..."> <input type="time" id="ft"><button class="btn-action" onclick="ui.saveFixed()">Añadir</button></div><div id="fixed-manager-list"></div>`;
-            this.refreshFixedList();
-        },
-        refreshFixedList() {
-            const list = document.getElementById('fixed-manager-list'); if(!list) return;
-            list.innerHTML = Object.entries(app.data).filter(([id,t])=>t.type==='fixed').map(([id,t])=>`<div class="manager-item"><span>${t.name} (${t.time})</span><button class="btn-delete" onclick="ui.deleteTask('${id}')">BORRAR</button></div>`).join('');
-        },
-        saveFixed() { const n = document.getElementById('fn').value, t = document.getElementById('ft').value; if(n && t) push(ref(db, `users/${app.currentUserId}/tasks`), { name: n, time: t, type: 'fixed', completedDate: '', history: '' }); },
-        showForm(type) {
-            const ws = document.getElementById('workspace');
-            const isS = type === 'scheduled';
-            ws.innerHTML = `<h1>${isS?'⏰ Programación':'🔗 Enlaces'}</h1><div style="background:#f8fafc; padding:20px; border-radius:15px; border:1px solid #e2e8f0; margin-bottom:20px;"><input id="n1" placeholder="Nombre..."><input type="${isS?'datetime-local':'url'}" id="n2"><button class="btn-action" onclick="ui.saveData('${type}')">Guardar</button></div><div id="${isS?'scheduled-manager-list':'link-list-manager'}"></div>`;
-            isS ? this.refreshScheduledList() : this.refreshLinkList();
-        },
-        refreshScheduledList() {
-            const list = document.getElementById('scheduled-manager-list'); if(!list) return;
-            list.innerHTML = Object.entries(app.data).filter(([id, t]) => t.type === 'scheduled' && !t.completed).map(([id, t]) => `<div class="manager-item"><span><b>${t.date.replace('T', ' ')}</b> - ${t.name}</span><button class="btn-delete" onclick="ui.deleteTask('${id}')">BORRAR</button></div>`).join('');
-        },
-        refreshLinkList() {
-            const list = document.getElementById('link-list-manager'); if(!list) return;
-            list.innerHTML = Object.entries(app.links).map(([id, l]) => `<div class="manager-item"><span>${l.name}</span><button class="btn-delete" onclick="ui.deleteLink('${id}')">BORRAR</button></div>`).join('');
-        },
-        saveData(type) {
-            const v1 = document.getElementById('n1').value, v2 = document.getElementById('n2').value;
-            if(v1 && v2) {
-                if(type === 'scheduled') push(ref(db, `users/${app.currentUserId}/tasks`), { name: v1, date: v2, type: 'scheduled', completed: false, history: '' });
-                else push(ref(db, `users/${app.currentUserId}/links`), { name: v1, url: v2, order: 999 });
-            }
-        },
-        deleteTask(id) { if(confirm("¿Borrar?")) remove(ref(db, `users/${app.currentUserId}/tasks/${id}`)); },
-        deleteLink(id) { if(confirm("¿Borrar?")) remove(ref(db, `users/${app.currentUserId}/links/${id}`)); },
-        renderLinks(links) {
-            const cont = document.getElementById('quickLinks'); cont.innerHTML = "";
-            Object.entries(links).sort((a,b)=>(a[1].order||0)-(b[1].order||0)).forEach(([id, l]) => {
-                const b = document.createElement('div'); b.className = "nav-btn link-item"; b.dataset.id = id; b.innerHTML = `🔗 ${l.name}`;
-                b.onclick = () => window.open(l.url, '_blank');
-                cont.appendChild(b);
-            });
-        },
-        saveMenuOrder() {},
-        saveLinksOrder() {},
-        accessConfig() {
-            if(!app.isConnected) { alert("Inicia sesión primero"); return; }
-            const pass = prompt("Contraseña de administración:");
-            if(pass === "Megasur-,20") {
-                this.renderConfigPanel();
-            } else if(pass !== null) {
-                alert("Contraseña incorrecta");
-            }
-        },
-        renderConfigPanel() {
-            const ws = document.getElementById('workspace');
-            ws.innerHTML = `
-                <h1>⚙️ Configuración</h1>
-                <p style="color:#64748b; margin-bottom:20px;">Usuarios registrados en el sistema.</p>
-                <div id="config-users-list"></div>
-            `;
-            onValue(ref(db, 'config/users'), snap => {
-                const users = snap.val() || {};
-                const list = document.getElementById('config-users-list');
-                if(!list) return;
-                const entries = Object.entries(users);
-                if(!entries.length) { list.innerHTML = '<p style="color:#94a3b8; font-size:0.85rem;">No hay usuarios registrados aún.</p>'; return; }
-                entries.sort((a,b) => (b[1].lastLogin||'').localeCompare(a[1].lastLogin||''));
-                list.innerHTML = entries.map(([uid, u]) => {
-                    const isMe = uid === app.currentUserId;
-                    return `<div class="manager-item" style="${isMe ? 'border-left:4px solid var(--accent)' : ''}">
-                        <div>
-                            <span style="font-weight:600; font-size:0.85rem;">${escHtml(u.name || u.email || 'Sin nombre')} ${isMe ? '<span style="font-size:0.65rem;color:var(--accent);">(Tú)</span>' : ''}</span><br>
-                            <span style="font-size:0.72rem; color:#64748b;">${escHtml(u.email || '')} · Último acceso: ${u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-ES') : '--'}</span>
-                        </div>
-                        ${!isMe ? `<button class="btn-delete" onclick="ui.deleteUser('${uid}')">ELIMINAR</button>` : ''}
-                    </div>`;
-                }).join('');
-            });
-        },
-        deleteUser(uid) {
-            const name = prompt("Escribe ELIMINAR para confirmar el borrado completo de este usuario y sus datos:");
-            if(name === "ELIMINAR") {
-                remove(ref(db, `users/${uid}`));
-                remove(ref(db, `config/users/${uid}`));
-                alert("Usuario eliminado");
-            }
-        }
-    };
+        <!-- 3 Column Layout -->
+        <main class="main-layout">
+            
+            <!-- Left Column: Navigation (15%) -->
+            <aside class="col-left glass-panel">
+                <nav class="side-nav">
+                    <ul>
+                        <li class="active"><a href="#"><i class="fa-solid fa-house"></i> Inicio</a></li>
+                        <li><a href="#"><i class="fa-solid fa-users"></i> Clientes</a></li>
+                        <li><a href="#"><i class="fa-solid fa-calendar-check"></i> Tareas</a></li>
+                        <li><a href="#"><i class="fa-solid fa-chart-line"></i> Reportes</a></li>
+                        <li><a href="#"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+                    </ul>
+                </nav>
+            </aside>
 
-    app.init(); window.ui = ui; window.app = app;
-</script>
+            <!-- Center Column: Main Content (70%) -->
+            <section class="col-center">
+                <div class="content-header">
+                    <h1>Panel de Control</h1>
+                    <p>Bienvenido a tu espacio de trabajo.</p>
+                </div>
+                
+                <div class="modules-container">
+                    <div class="module-card glass-panel">
+                        <h3>Módulo de Ejemplo</h3>
+                        <p>Aquí se desarrollará el contenido principal y los módulos personalizados según la necesidad de la empresa.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Column: Context/Widgets (15%) -->
+            <aside class="col-right glass-panel">
+                <div class="widget">
+                    <h4>Actividad Reciente</h4>
+                    <p class="text-sm text-muted">Próximamente...</p>
+                </div>
+                <div class="widget">
+                    <h4>Notificaciones</h4>
+                    <p class="text-sm text-muted">No hay avisos.</p>
+                </div>
+            </aside>
+
+        </main>
+    </div>
+
+    <!-- Firebase JS SDKs -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
