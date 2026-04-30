@@ -3,138 +3,1192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sleek CRM - Gestión de Tareas Inteligente</title>
-    <meta name="description" content="Sistema CRM personalizado para control de tareas, programación y gestión de flujos de trabajo en tiempo real.">
-    
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome for Icons -->
+    <title>CRM Megasur | Operaciones</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: rgba(255,255,255,0.07);
+            --main-bg: #f8fafc;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-soft: rgba(99,102,241,0.08);
+            --fixed-pastel: #fefce8;
+            --fixed-border: #f59e0b;
+            --sched-pastel: #f0f9ff;
+            --sched-border: #3b82f6;
+            --late-pastel: #fff1f2;
+            --late-border: #e11d48;
+            --danger: #e11d48;
+            --danger-soft: rgba(225,29,72,0.08);
+            --warning: #f59e0b;
+            --success: #10b981;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --card-bg: #ffffff;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 20px 40px rgba(0,0,0,0.1);
+            --shadow-focus: 0 0 0 3px rgba(99,102,241,0.25);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; height: 100vh; background: var(--main-bg); color: var(--text-primary); overflow: hidden; -webkit-font-smoothing: antialiased; }
+        .app-shell { display: flex; height: 100%; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* ─── Sidebar ─── */
+        .sidebar {
+            width: 256px; min-width: 256px;
+            background: var(--sidebar-bg); color: white;
+            padding: 1.25rem 0.75rem;
+            display: flex; flex-direction: column; z-index: 10;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .sidebar-brand {
+            font-size: 0.8rem; font-weight: 800; color: #818cf8;
+            padding: 0 0.75rem; margin-bottom: 1.25rem;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar-brand::before {
+            content: ''; width: 8px; height: 8px;
+            background: #818cf8; border-radius: 50%;
+            box-shadow: 0 0 10px rgba(129,140,248,0.6);
+        }
+
+        /* ─── Perfil de usuario en sidebar ─── */
+        .user-profile {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px; margin-bottom: 12px;
+            background: rgba(255,255,255,0.04);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .user-avatar-wrap {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .user-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .user-avatar-wrap span {
+            color: white; font-weight: 700; font-size: 0.85rem;
+            text-transform: uppercase; display: none;
+        }
+        .user-avatar-wrap.no-photo img { display: none; }
+        .user-avatar-wrap.no-photo span { display: block; }
+        .user-profile-text { flex: 1; min-width: 0; }
+        .user-profile-name {
+            font-size: 0.85rem; font-weight: 600; color: white;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .user-profile-email {
+            font-size: 0.68rem; color: #64748b;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ─── Botón Google sidebar ─── */
+        .sign-in-area { padding: 4px 0 12px; }
+        .btn-google-sidebar {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 11px 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: var(--radius-sm);
+            color: white; font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); font-family: inherit;
+        }
+        .btn-google-sidebar:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
+        .btn-google-sidebar:active { transform: scale(0.98); }
+
+        /* ─── Navegación ─── */
+        .nav-section-label {
+            font-size: 0.6rem; font-weight: 700; color: #475569;
+            text-transform: uppercase; letter-spacing: 1.5px;
+            padding: 12px 12px 6px; user-select: none;
+        }
+        .nav-btn {
+            background: transparent; border: none; color: #94a3b8;
+            padding: 9px 12px; text-align: left; cursor: pointer;
+            border-radius: var(--radius-sm); font-size: 0.82rem;
+            transition: var(--transition); display: flex;
+            align-items: center; gap: 10px; width: 100%;
+            margin-bottom: 1px; position: relative; font-family: inherit;
+        }
+        .nav-btn:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+        .nav-btn:active { transform: scale(0.98); }
+        .nav-btn.active-nav { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+        .nav-btn.active-nav::before {
+            content: ''; position: absolute; left: 0; top: 50%;
+            transform: translateY(-50%); width: 3px; height: 60%;
+            background: var(--accent); border-radius: 0 4px 4px 0;
+        }
+        .nav-btn .nav-icon { width: 20px; text-align: center; font-size: 0.9rem; flex-shrink: 0; }
+        .sidebar-footer {
+            margin-top: auto; padding-top: 0.75rem;
+            border-top: 1px solid #1e293b;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .nav-btn-logout:hover { background: rgba(225,29,72,0.1); color: #fca5a5; }
+
+        /* ─── Workspace ─── */
+        .workspace { flex: 1; padding: 2rem 2.5rem; overflow-y: auto; background: var(--main-bg); }
+        .workspace h1 { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.4rem; }
+        .workspace-subtitle { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.5rem; font-weight: 500; }
+
+        /* ─── Pantalla de login ─── */
+        .login-screen {
+            display: flex; align-items: center; justify-content: center; height: 100%; padding: 2rem;
+        }
+        .login-card {
+            text-align: center; max-width: 420px; width: 100%;
+            padding: 3rem 2.5rem; background: white;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+        }
+        .login-brand {
+            font-size: 0.7rem; font-weight: 800; color: var(--accent);
+            letter-spacing: 2.5px; text-transform: uppercase;
+            margin-bottom: 2rem;
+        }
+        .login-card h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem; }
+        .login-card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem; line-height: 1.6; }
+        .btn-google-login {
+            display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+            padding: 14px 32px; background: white;
+            border: 1px solid #dadce0; border-radius: var(--radius-md);
+            color: #3c4043; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); font-family: inherit;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .btn-google-login:hover { background: #f8f9fa; box-shadow: 0 4px 16px rgba(0,0,0,0.12); transform: translateY(-1px); }
+        .btn-google-login:active { transform: translateY(0); }
+        .login-note { font-size: 0.7rem; color: var(--text-muted); margin-top: 1.5rem; line-height: 1.5; }
+
+        /* ─── Panel derecho ─── */
+        .control-panel {
+            width: 330px; min-width: 330px;
+            border-left: 1px solid var(--border);
+            background: var(--card-bg); display: flex; flex-direction: column;
+        }
+        .task-header { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+        .task-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .task-header-title { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; }
+        .feed-filter-btn {
+            background: none; border: 1px solid var(--border);
+            border-radius: 6px; padding: 3px 8px; font-size: 0.65rem;
+            color: var(--text-muted); cursor: pointer; font-family: inherit; font-weight: 600; transition: var(--transition);
+        }
+        .feed-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .feed-filter-btn.active-filter { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+        .live-clock { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+        .live-date { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+        .task-feed { padding: 0.75rem; overflow-y: auto; flex: 1; }
+        .feed-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 0.8rem; }
+        .feed-empty i { font-size: 2rem; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
+        .date-separator {
+            font-size: 0.6rem; font-weight: 800; color: var(--text-muted);
+            text-transform: uppercase; padding: 14px 6px 7px;
+            letter-spacing: 1.2px; border-bottom: 1px solid var(--border-light);
+            margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+        }
+        .date-separator::after { content: ''; flex: 1; height: 1px; background: var(--border-light); }
+        .card {
+            padding: 12px 14px; border-radius: var(--radius-md);
+            margin-bottom: 6px; cursor: pointer; border: 1px solid transparent;
+            transition: var(--transition); box-shadow: var(--shadow-sm);
+            position: relative; overflow: hidden;
+        }
+        .card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; }
+        .card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .card:active { transform: scale(0.99); }
+        .card.fixed { background: var(--fixed-pastel); }
+        .card.fixed::before { background: var(--fixed-border); }
+        .card.scheduled { background: var(--sched-pastel); }
+        .card.scheduled::before { background: var(--sched-border); }
+        .card.late { background: var(--late-pastel); }
+        .card.late::before { background: var(--late-border); }
+        .card.late .card-time { color: var(--danger); font-weight: 600; }
+        .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .card h4 { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); line-height: 1.35; }
+        .card-type-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+        .card.fixed .card-type-dot { background: var(--fixed-border); }
+        .card.scheduled .card-type-dot { background: var(--sched-border); }
+        .card.late .card-type-dot { background: var(--late-border); animation: dotPulse 1.5s ease-in-out infinite; }
+        @keyframes dotPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.5; transform:scale(1.4); } }
+        .card-time { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+        .card-time i { font-size: 0.6rem; }
+
+        /* ─── Formularios ─── */
+        .form-card {
+            background: var(--card-bg); padding: 1.25rem;
+            border-radius: var(--radius-lg); border: 1px solid var(--border);
+            margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);
+        }
+        .form-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px; }
+        .form-label { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input {
+            width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); outline: none;
+            font-size: 0.85rem; font-family: inherit;
+            transition: var(--transition); background: var(--card-bg); color: var(--text-primary);
+        }
+        .form-input:focus { border-color: var(--accent); box-shadow: var(--shadow-focus); }
+        .form-input::placeholder { color: var(--text-muted); }
+        textarea.form-input { resize: vertical; min-height: 80px; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 20px; border-radius: var(--radius-sm);
+            border: none; cursor: pointer; font-weight: 600;
+            font-size: 0.82rem; font-family: inherit;
+            transition: var(--transition); white-space: nowrap;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-ghost:hover { border-color: #94a3b8; color: var(--text-secondary); background: #f8fafc; }
+        .btn-danger-ghost {
+            background: none; border: none; color: var(--danger); cursor: pointer;
+            font-weight: 600; font-size: 0.75rem; font-family: inherit;
+            padding: 4px 8px; border-radius: 4px; transition: var(--transition);
+        }
+        .btn-danger-ghost:hover { background: var(--danger-soft); }
+
+        .manager-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; background: var(--card-bg);
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            margin-bottom: 6px; transition: var(--transition);
+        }
+        .manager-item:hover { border-color: #cbd5e1; box-shadow: var(--shadow-sm); }
+        .manager-item-name { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); }
+        .manager-item-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+        .module-card {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 18px; background: var(--card-bg);
+            border-radius: var(--radius-md); margin-bottom: 8px;
+            border: 1px solid var(--border); transition: var(--transition);
+        }
+        .module-card:hover { border-color: #cbd5e1; }
+        .module-card-left { display: flex; align-items: center; gap: 10px; }
+        .module-card-icon {
+            width: 32px; height: 32px; border-radius: var(--radius-sm);
+            background: var(--accent-soft); display: flex; align-items: center;
+            justify-content: center; color: var(--accent); font-size: 0.85rem;
+        }
+        .module-card-name { font-size: 0.85rem; font-weight: 600; }
+        .module-card-sub { font-size: 0.68rem; color: var(--text-muted); }
+
+        .switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #cbd5e1; transition: .3s; border-radius: 22px; }
+        .slider::before {
+            position: absolute; content: ""; height: 16px; width: 16px;
+            left: 3px; bottom: 3px; background-color: white;
+            transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider::before { transform: translateX(18px); }
+
+        .add-module-box {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 1.5rem; border-radius: var(--radius-lg);
+            margin-bottom: 1.5rem; border: 2px dashed #cbd5e1; transition: var(--transition);
+        }
+        .add-module-box:focus-within { border-color: var(--accent); background: linear-gradient(135deg, #fafafe, #f5f5ff); }
+        .help-link { color: var(--accent); font-size: 0.72rem; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+        .help-link:hover { text-decoration: underline; }
+        iframe { width: 100%; height: calc(100vh - 120px); border: none; border-radius: var(--radius-lg); margin-top: 10px; background: white; box-shadow: var(--shadow-md); }
+
+        /* ─── Modales ─── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(6px);
+            z-index: 100; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s ease;
+        }
+        .modal-overlay.visible { display: flex; opacity: 1; }
+        .modal-body {
+            background: white; padding: 1.75rem 2rem;
+            border-radius: var(--radius-xl); width: 420px; max-width: 92vw;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(10px) scale(0.97);
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-overlay.visible .modal-body { transform: translateY(0) scale(1); }
+        .modal-task-name { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.3rem; }
+        .modal-task-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light); }
+        .modal-section { margin-bottom: 1rem; }
+        .modal-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-light); }
+        .modal-link-btn {
+            width: 100%; background: none; border: none; color: var(--accent);
+            cursor: pointer; font-weight: 600; font-size: 0.78rem; font-family: inherit;
+            padding: 8px; border-radius: var(--radius-sm); transition: var(--transition); text-align: center;
+        }
+        .modal-link-btn:hover { background: var(--accent-soft); }
+
+        .pass-modal-icon {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.25rem; color: #818cf8; font-size: 1.3rem;
+        }
+        .pass-modal-title { text-align: center; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.3rem; }
+        .pass-modal-desc { text-align: center; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+        .pass-error {
+            background: var(--danger-soft); color: var(--danger);
+            font-size: 0.75rem; font-weight: 600; padding: 8px 12px;
+            border-radius: var(--radius-sm); margin-bottom: 10px;
+            display: none; align-items: center; gap: 6px;
+        }
+        .pass-error.visible { display: flex; }
+
+        /* ─── Config panel ─── */
+        .config-header-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+        }
+        .config-header-bar h1 { margin-bottom: 0; }
+        .stat-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.72rem; font-weight: 700; padding: 4px 12px;
+            border-radius: 20px; background: var(--accent-soft); color: var(--accent);
+        }
+        .user-card {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px; background: var(--card-bg);
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            margin-bottom: 8px; transition: var(--transition);
+        }
+        .user-card:hover { border-color: #cbd5e1; box-shadow: var(--shadow-sm); }
+        .user-avatar-sm {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #818cf8);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .user-avatar-sm img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .user-avatar-sm span { color: white; font-weight: 700; font-size: 0.82rem; text-transform: uppercase; display: none; }
+        .user-avatar-sm.no-photo img { display: none; }
+        .user-avatar-sm.no-photo span { display: block; }
+        .user-card-info { flex: 1; min-width: 0; }
+        .user-card-name { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+        .user-card-email { font-size: 0.7rem; color: var(--text-muted); word-break: break-all; }
+        .user-card-date { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+        .user-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        /* ─── Toast ─── */
+        .toast-container {
+            position: fixed; bottom: 24px; right: 24px;
+            z-index: 200; display: flex; flex-direction: column-reverse; gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px; border-radius: var(--radius-md);
+            background: var(--text-primary); color: white;
+            font-size: 0.82rem; font-weight: 500; font-family: 'Inter', sans-serif;
+            box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px;
+            animation: toastIn 0.35s cubic-bezier(0.4, 0, 0.2, 1); max-width: 400px;
+        }
+        .toast.toast-out { animation: toastOut 0.3s ease forwards; }
+        .toast-success { background: #065f46; }
+        .toast-error { background: #881337; }
+        .toast-info { background: #1e3a5f; }
+        @keyframes toastIn { from { opacity:0; transform:translateY(12px) scale(0.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes toastOut { to { opacity:0; transform:translateY(8px) scale(0.95); } }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+
+        @media (max-width: 1024px) { .control-panel { width: 280px; min-width: 280px; } }
+        @media (max-width: 860px) {
+            .sidebar { width: 60px; min-width: 60px; padding: 1rem 0.4rem; }
+            .sidebar-brand span { display: none; }
+            .user-profile-text, .nav-btn span:last-child, .nav-btn .nav-text,
+            .nav-section-label, .sign-in-area, .sidebar-footer .nav-btn span:last-child { display: none; }
+            .nav-btn { justify-content: center; padding: 10px; }
+            .nav-btn .nav-icon { width: auto; }
+            .user-profile { justify-content: center; padding: 8px; }
+            .user-profile-text { display: none; }
+            .workspace { padding: 1.5rem; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        button:focus:not(:focus-visible) { outline: none; }
+    </style>
 </head>
 <body>
-    <div id="app-container">
-        <!-- Columna Izquierda: Navegación -->
-        <aside id="sidebar">
-            <div class="logo-container">
-                <i class="fas fa-rocket logo-icon"></i>
-                <span class="logo-text">CRM PRO</span>
-            </div>
-            <nav id="main-nav">
-                <!-- Los botones se cargarán dinámicamente o según el usuario explique -->
-                <div class="nav-section-title">MENÚ PRINCIPAL</div>
-                <ul id="nav-list">
-                    <!-- Ejemplo de botones que vendrán luego -->
-                    <li class="nav-item active" id="btn-dashboard">
-                        <i class="fas fa-th-large"></i> <span>Dashboard</span>
-                    </li>
-                </ul>
-            </nav>
-            <div class="sidebar-footer">
-                <div id="user-profile">
-                    <div class="user-avatar">?</div>
-                    <div class="user-info">
-                        <span class="user-name">Usuario CRM</span>
-                        <span class="user-status">Online</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
 
-        <!-- Columna Central: Contenido Principal (65%) -->
-        <main id="main-content">
-            <header id="content-header">
-                <div class="header-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Buscar tareas, clientes o módulos...">
-                </div>
-                <div class="header-actions">
-                    <button class="icon-btn" id="btn-notifications">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge"></span>
-                    </button>
-                    <button class="icon-btn" id="btn-settings">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
-            </header>
+<div class="app-shell">
+    <aside class="sidebar" role="navigation" aria-label="Menú principal">
+        <div class="sidebar-brand"><span>CRM MEGASUR</span></div>
 
-            <!-- Barra de Marcadores (Estilo Chrome) -->
-            <div id="bookmarks-bar">
-                <!-- Se llena dinámicamente desde Firebase -->
+        <!-- Perfil (visible tras login) -->
+        <div id="userProfile" class="user-profile" style="display:none">
+            <div class="user-avatar-wrap" id="sidebarAvatarWrap">
+                <img id="sidebarAvatar" src="" alt="">
+                <span id="sidebarAvatarFallback"></span>
             </div>
-            
-            <section id="module-viewport">
-                <!-- Aquí se cargará dinámicamente la aplicación de cada módulo -->
-                <div class="view-placeholder">
-                    <h2>Bienvenido</h2>
-                    <p>Selecciona un módulo en la barra lateral para comenzar.</p>
-                </div>
-            </section>
-        </main>
-
-        <!-- Columna Derecha: Tareas Programadas -->
-        <section id="task-column">
-            <div class="task-column-header">
-                <h3>Tareas Programadas</h3>
-                <button id="btn-quick-add-task" class="add-btn">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </div>
-            
-            <div id="task-list-container">
-                <!-- Ejemplo de estructura de tareas por fecha -->
-                <div class="task-date-group">
-                    <div class="date-divider">HOY, 19 ABRIL</div>
-                    <div class="task-item high">
-                        <div class="task-time">09:00</div>
-                        <div class="task-info">
-                            <h4>Reunión de Equipo</h4>
-                            <p>Planificación semanal CRM</p>
-                        </div>
-                        <div class="task-check">
-                            <input type="checkbox">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- Auth Screen -->
-    <div id="auth-screen">
-        <div class="auth-card">
-            <div class="auth-header">
-                <i class="fas fa-rocket logo-icon"></i>
-                <h2 id="auth-title">Bienvenido a CRM PRO</h2>
-                <p id="auth-subtitle">Ingresa tus credenciales para continuar</p>
-            </div>
-            
-            <form id="auth-form">
-                <div class="auth-group">
-                    <label>Correo Electrónico</label>
-                    <input type="email" id="auth-email" placeholder="ejemplo@correo.com" required>
-                </div>
-                <div class="auth-group" id="pass-group">
-                    <label>Contraseña</label>
-                    <input type="password" id="auth-password" placeholder="••••••••">
-                </div>
-                
-                <button type="submit" id="btn-auth-submit" class="btn-primary w-full">Iniciar Sesión</button>
-            </form>
-
-            <div class="auth-footer">
-                <button id="btn-switch-register" class="link-btn">¿No tienes cuenta? Regístrate</button>
-                <button id="btn-switch-forgot" class="link-btn">Olvidé mi contraseña</button>
+            <div class="user-profile-text">
+                <div class="user-profile-name" id="sidebarName"></div>
+                <div class="user-profile-email" id="sidebarEmail"></div>
             </div>
         </div>
-    </div>
 
-    <!-- Firebase Scripts -->
-    <script type="module" src="app.js"></script>
+        <!-- Botón login (visible sin sesión) -->
+        <div id="signInArea" class="sign-in-area" style="display:none">
+            <button id="btnSidebarSignIn" class="btn-google-sidebar">
+                <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                Iniciar sesión
+            </button>
+        </div>
+
+        <!-- Navegación (visible tras login) -->
+        <div id="navArea" style="display:none">
+            <div class="nav-section-label">Operaciones</div>
+            <nav id="main-menu" aria-label="Módulos principales"></nav>
+            <div id="quickLinks"></div>
+        </div>
+
+        <div class="sidebar-footer" id="sidebarFooter" style="display:none">
+            <button class="nav-btn" id="btnModules">
+                <span class="nav-icon"><i class="fa-solid fa-puzzle-piece"></i></span>
+                <span class="nav-text">Gestión</span>
+            </button>
+            <button class="nav-btn" id="btnConfig">
+                <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                <span class="nav-text">Config</span>
+            </button>
+            <button class="nav-btn nav-btn-logout" id="btnSignOut">
+                <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+                <span class="nav-text">Cerrar sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="workspace" id="workspace" role="main">
+        <div id="ws-content" class="login-screen">
+            <div style="text-align:center;opacity:0.4">
+                <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2rem;color:var(--accent)"></i>
+                <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted)">Cargando...</p>
+            </div>
+        </div>
+    </main>
+
+    <section class="control-panel" aria-label="Feed de tareas" id="controlPanel" style="display:none">
+        <div class="task-header">
+            <div class="task-header-top">
+                <span class="task-header-title">Actividad</span>
+                <div style="display:flex;gap:4px">
+                    <button class="feed-filter-btn active-filter" data-filter="all">Todas</button>
+                    <button class="feed-filter-btn" data-filter="fixed">Fijas</button>
+                    <button class="feed-filter-btn" data-filter="scheduled">Prog.</button>
+                </div>
+            </div>
+            <div id="liveDate" class="live-date">--/--/----</div>
+            <div id="liveClock" class="live-clock">00:00:00</div>
+        </div>
+        <div class="task-feed" id="taskFeed" role="list" aria-label="Lista de tareas"></div>
+    </section>
+</div>
+
+<!-- Modal de tarea -->
+<div id="actionModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-body">
+        <div class="modal-task-name" id="m-taskName"></div>
+        <div class="modal-task-meta" id="m-taskMeta"></div>
+        <div id="completion-zone" class="modal-section">
+            <label class="form-label" for="m-solution">Notas de conclusión</label>
+            <textarea id="m-solution" class="form-input" rows="3" placeholder="Describe lo realizado..."></textarea>
+            <button class="btn btn-primary" style="width:100%;margin-top:8px" id="btnCompleteTask"><i class="fa-solid fa-check"></i> Concluir Tarea</button>
+        </div>
+        <div id="reschedule-zone" class="modal-section" style="display:none">
+            <label class="form-label" for="m-new-date">Nueva fecha y hora</label>
+            <input type="datetime-local" id="m-new-date" class="form-input">
+            <button class="btn btn-warning" style="width:100%;margin-top:8px" id="btnRescheduleTask"><i class="fa-solid fa-calendar-check"></i> Confirmar Reprogramación</button>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-link-btn" id="btnToggleView"><i class="fa-solid fa-rotate"></i> REPROGRAMAR TAREA</button>
+            <button class="modal-link-btn" id="btnDeleteFromModal" style="color:var(--danger)"><i class="fa-solid fa-trash"></i> ELIMINAR TAREA</button>
+            <button class="modal-link-btn" id="btnCloseModal" style="color:var(--text-muted)">CERRAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de contraseña -->
+<div id="passModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-body" style="width:380px">
+        <div class="pass-modal-icon"><i class="fa-solid fa-lock"></i></div>
+        <div class="pass-modal-title">Acceso restringido</div>
+        <div class="pass-modal-desc">Introduce la contraseña de administración.</div>
+        <div class="pass-error" id="passError"><i class="fa-solid fa-circle-xmark"></i> Contraseña incorrecta</div>
+        <label class="form-label" for="passInput">Contraseña</label>
+        <input type="password" id="passInput" class="form-input" placeholder="Escribe aquí..." autocomplete="off">
+        <div style="display:flex;gap:8px;margin-top:6px">
+            <button class="btn btn-primary" style="flex:1" id="btnPassSubmit"><i class="fa-solid fa-right-to-bracket"></i> Entrar</button>
+            <button class="btn btn-ghost" id="btnPassCancel">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, update, remove, set, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    /* ─── Configuración Firebase ─── */
+    const firebaseConfig = {
+        apiKey: "AIzaSyCqTyb7FvBVRZKAnB_7g8VMvONfI7QKWjE",
+        authDomain: "crmv1-21322.firebaseapp.com",
+        databaseURL: "https://crmv1-21322-default-rtdb.firebaseio.com",
+        projectId: "crmv1-21322",
+        storageBucket: "crmv1-21322.firebasestorage.app",
+        messagingSenderId: "892438558015",
+        appId: "1:892438558015:web:fccee492b12470628f8f8a",
+        measurementId: "G-7BYG21GK2T"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getDatabase(firebaseApp);
+    const auth = getAuth(firebaseApp);
+    const googleProvider = new GoogleAuthProvider();
+
+    /* ─── Estado ─── */
+    const state = {
+        uid: null, connected: false,
+        tasks: {}, links: {}, customModules: {},
+        moduleSettings: [], registeredUsers: {},
+        activeFilter: 'all', activeNavId: null,
+        modalTaskId: null, modalView: 'complete'
+    };
+
+    const dbRefs = {};
+    let configUsersRef = null;
+
+    const DEFAULT_MODULES = [
+        { id: 'fixed', name: 'Tareas Fijas', icon: 'fa-solid fa-thumbtack', active: true },
+        { id: 'scheduled', name: 'Programación', icon: 'fa-solid fa-clock', active: true },
+        { id: 'links', name: 'Enlaces', icon: 'fa-solid fa-link', active: true }
+    ];
+
+    /* ─── Utilidades ─── */
+    const todayStr = () => new Date().toISOString().split('T')[0];
+    const escHtml = s => { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
+    const isLate = d => d ? new Date(d) < new Date() : false;
+    const formatTime = t => t ? t.substring(0, 5) : '--:--';
+    function formatDateLabel(d) {
+        if (d === todayStr()) return 'HOY';
+        return new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase();
+    }
+    function avatarEl(user, wrapClass) {
+        const hasPhoto = user.photoURL;
+        return `<div class="${wrapClass} ${hasPhoto ? '' : 'no-photo'}">
+            <img src="${escHtml(hasPhoto || '')}" alt="">
+            <span>${escHtml((user.displayName || user.email || '??').substring(0, 2).toUpperCase())}</span>
+        </div>`;
+    }
+
+    /* ─── Toast ─── */
+    function toast(msg, type = 'info') {
+        const c = document.getElementById('toastContainer');
+        const el = document.createElement('div');
+        const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+        el.className = `toast toast-${type}`;
+        el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i> ${escHtml(msg)}`;
+        c.appendChild(el);
+        setTimeout(() => { el.classList.add('toast-out'); el.addEventListener('animationend', () => el.remove()); }, 3500);
+    }
+
+    /* ─── Reloj ─── */
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('liveClock').textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('liveDate').textContent = now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+    setInterval(updateClock, 1000);
+
+    /* ═══════════════════════════════════════
+       AUTENTICACIÓN CON GOOGLE
+       ═══════════════════════════════════════ */
+    function setAvatar(imgEl, fallbackEl, wrapEl, photoURL, name) {
+        if (photoURL) {
+            imgEl.src = photoURL;
+            wrapEl.classList.remove('no-photo');
+            imgEl.onerror = () => { wrapEl.classList.add('no-photo'); fallbackEl.textContent = (name || '??').substring(0, 2).toUpperCase(); };
+        } else {
+            wrapEl.classList.add('no-photo');
+            fallbackEl.textContent = (name || '??').substring(0, 2).toUpperCase();
+        }
+    }
+
+    function showSignedInUI(user) {
+        /* Sidebar */
+        document.getElementById('userProfile').style.display = 'flex';
+        document.getElementById('signInArea').style.display = 'none';
+        document.getElementById('navArea').style.display = 'block';
+        document.getElementById('sidebarFooter').style.display = 'flex';
+        document.getElementById('controlPanel').style.display = 'flex';
+
+        setAvatar(
+            document.getElementById('sidebarAvatar'),
+            document.getElementById('sidebarAvatarFallback'),
+            document.getElementById('sidebarAvatarWrap'),
+            user.photoURL,
+            user.displayName
+        );
+        document.getElementById('sidebarName').textContent = user.displayName || 'Sin nombre';
+        document.getElementById('sidebarEmail').textContent = user.email || '';
+    }
+
+    function showSignedOutUI() {
+        document.getElementById('userProfile').style.display = 'none';
+        document.getElementById('signInArea').style.display = 'block';
+        document.getElementById('navArea').style.display = 'none';
+        document.getElementById('sidebarFooter').style.display = 'none';
+        document.getElementById('controlPanel').style.display = 'none';
+        document.getElementById('main-menu').innerHTML = '';
+        document.getElementById('quickLinks').innerHTML = '';
+    }
+
+    function renderLoginScreen() {
+        document.getElementById('workspace').innerHTML = `
+            <div class="login-screen">
+                <div class="login-card">
+                    <div class="login-brand">CRM MEGASUR</div>
+                    <h2>Bienvenido al CRM</h2>
+                    <p>Inicia sesión con tu cuenta de Google para acceder al panel de operaciones.</p>
+                    <button class="btn-google-login" id="btnWorkspaceSignIn">
+                        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                        Iniciar sesión con Google
+                    </button>
+                    <p class="login-note">Tu cuenta se usa solo para identificación. No compartimos tus datos con terceros.</p>
+                </div>
+            </div>`;
+        document.getElementById('btnWorkspaceSignIn').addEventListener('click', doSignIn);
+    }
+
+    async function doSignIn() {
+        try {
+            await signInWithPopup(auth, googleProvider);
+        } catch (error) {
+            if (error.code === 'auth/popup-closed-by-user') return;
+            if (error.code === 'auth/unauthorized-domain') {
+                toast('Dominio no autorizado. Añádelo en Firebase Console → Auth → Settings → Dominios autorizados', 'error');
+            } else if (error.code === 'auth/popup-blocked') {
+                toast('El popup fue bloqueado. Permite popups para este sitio.', 'error');
+            } else {
+                toast(`Error: ${error.message}`, 'error');
+            }
+        }
+    }
+
+    async function doSignOut() {
+        try {
+            await signOut(auth);
+        } catch (e) {
+            toast('Error al cerrar sesión', 'error');
+        }
+    }
+
+    /* ─── Callback principal de auth ─── */
+    function handleSignIn(user) {
+        state.uid = user.uid;
+        state.connected = true;
+        showSignedInUI(user);
+        updateClock();
+
+        // Registrar usuario en config y actualizar perfil
+        const now = new Date().toISOString();
+        update(ref(db, `users/${user.uid}/profile`), {
+            name: user.displayName || '', email: user.email || '',
+            photo: user.photoURL || '', lastLogin: now
+        });
+        const regRef = ref(db, `config/registered_users/${user.uid}`);
+        update(regRef, {
+            name: user.displayName || '', email: user.email || '',
+            photo: user.photoURL || '', lastLogin: now
+        });
+        // Registrar firstLogin solo si no existe
+        onValue(regRef, snap => {
+            if (!snap.val() || !snap.val().firstLogin) {
+                update(regRef, { firstLogin: now });
+            }
+        }, { onlyOnce: true });
+
+        connectDB(user.uid);
+        renderSidebar();
+        // Si estamos en login screen, ir al dashboard
+        if (document.getElementById('btnWorkspaceSignIn')) showDashboard();
+    }
+
+    function handleSignOut() {
+        disconnectDB();
+        state.uid = null; state.connected = false;
+        state.tasks = {}; state.links = {}; state.customModules = {}; state.moduleSettings = [];
+        showSignedOutUI();
+        renderLoginScreen();
+        if (configUsersRef) { try { off(configUsersRef); } catch(e) {} configUsersRef = null; }
+    }
+
+    onAuthStateChanged(auth, user => {
+        if (user) handleSignIn(user);
+        else handleSignOut();
+    });
+
+    /* ═══════════════════════════════════════
+       CONEXIÓN A BASE DE DATOS
+       ═══════════════════════════════════════ */
+    function connectDB(uid) {
+        disconnectDB();
+        dbRefs.tasks = ref(db, `users/${uid}/tasks`);
+        dbRefs.links = ref(db, `users/${uid}/links`);
+        dbRefs.modules = ref(db, `users/${uid}/custom_modules`);
+        dbRefs.settings = ref(db, `users/${uid}/settings/modules`);
+
+        onValue(dbRefs.tasks, s => { state.tasks = s.val() || {}; renderFeed(); refreshIf('fixed-manager-list', renderFixedList); refreshIf('scheduled-manager-list', renderScheduledList); });
+        onValue(dbRefs.links, s => { state.links = s.val() || {}; renderQuickLinks(); refreshIf('link-list-manager', renderLinkList); });
+        onValue(dbRefs.modules, s => { state.customModules = s.val() || {}; renderSidebar(); });
+        onValue(dbRefs.settings, s => { state.moduleSettings = s.val() || []; renderSidebar(); });
+    }
+
+    function disconnectDB() { Object.values(dbRefs).forEach(r => { try { off(r); } catch(e) {} }); }
+
+    function refreshIf(id, fn) { if (document.getElementById(id)) fn(); }
+
+    /* ═══════════════════════════════════════
+       DASHBOARD
+       ═══════════════════════════════════════ */
+    function showDashboard() {
+        const ws = document.getElementById('workspace');
+        ws.innerHTML = `
+            <h1>Panel de Control</h1>
+            <p class="workspace-subtitle">Selecciona un módulo del menú lateral para empezar.</p>
+            <div class="ws-empty">
+                <i class="fa-solid fa-layer-group"></i>
+                <p>Usa el menú de la izquierda para gestionar tareas, programaciones y enlaces.</p>
+            </div>`;
+        renderFeed();
+    }
+
+    /* ═══════════════════════════════════════
+       FEED DE TAREAS
+       ═══════════════════════════════════════ */
+    function renderFeed() {
+        const feed = document.getElementById('taskFeed'); if (!feed) return;
+        const today = todayStr();
+        let tasks = Object.entries(state.tasks).map(([id, t]) => ({ id, ...t })).filter(t => {
+            if (state.activeFilter === 'fixed' && t.type !== 'fixed') return false;
+            if (state.activeFilter === 'scheduled' && t.type !== 'scheduled') return false;
+            if (t.type === 'scheduled' && t.completed) return false;
+            if (t.type === 'fixed' && t.completedDate === today) return false;
+            return true;
+        });
+        tasks.sort((a, b) => {
+            const dA = a.type === 'fixed' ? today + 'T' + (a.time || '99:99') : a.date;
+            const dB = b.type === 'fixed' ? today + 'T' + (b.time || '99:99') : b.date;
+            return dA.localeCompare(dB);
+        });
+        if (!tasks.length) { feed.innerHTML = '<div class="feed-empty"><i class="fa-regular fa-face-smile"></i>Sin tareas pendientes</div>'; return; }
+        feed.innerHTML = ''; let last = '';
+        tasks.forEach(t => {
+            const td = t.type === 'fixed' ? today : (t.date ? t.date.split('T')[0] : today);
+            const lb = formatDateLabel(td);
+            if (lb !== last) { const s = document.createElement('div'); s.className = 'date-separator'; s.textContent = lb; feed.appendChild(s); last = lb; }
+            let cls = t.type; if (t.type === 'scheduled' && isLate(t.date)) cls = 'late';
+            const c = document.createElement('div'); c.className = `card ${cls}`; c.setAttribute('role', 'listitem'); c.setAttribute('tabindex', '0');
+            const tm = t.type === 'fixed' ? `<i class="fa-regular fa-clock"></i> ${formatTime(t.time)}` : `<i class="fa-regular fa-calendar"></i> ${t.date ? t.date.replace('T', ' ').substring(0, 16) : '--'}`;
+            c.innerHTML = `<div class="card-top"><h4>${escHtml(t.name || 'Sin nombre')}</h4><div class="card-type-dot"></div></div><div class="card-time">${tm}</div>`;
+            c.addEventListener('click', () => openTaskModal(t.id, t));
+            c.addEventListener('keydown', e => { if (e.key === 'Enter') openTaskModal(t.id, t); });
+            feed.appendChild(c);
+        });
+    }
+
+    document.querySelectorAll('.feed-filter-btn').forEach(b => b.addEventListener('click', () => {
+        document.querySelectorAll('.feed-filter-btn').forEach(x => x.classList.remove('active-filter'));
+        b.classList.add('active-filter'); state.activeFilter = b.dataset.filter; renderFeed();
+    }));
+
+    /* ═══════════════════════════════════════
+       SIDEBAR
+       ═══════════════════════════════════════ */
+    function renderSidebar() {
+        if (!state.connected) return;
+        const menu = document.getElementById('main-menu'), ql = document.getElementById('quickLinks');
+        menu.innerHTML = ''; ql.innerHTML = '';
+        DEFAULT_MODULES.forEach(m => {
+            const s = state.moduleSettings.find(x => x.id === m.id);
+            if (s && s.active === false) return;
+            const b = document.createElement('button');
+            b.className = `nav-btn${state.activeNavId === m.id ? ' active-nav' : ''}`;
+            b.innerHTML = `<span class="nav-icon"><i class="${m.icon}"></i></span><span class="nav-text">${m.name}</span>`;
+            b.addEventListener('click', () => { state.activeNavId = m.id; renderSidebar(); handleModule(m.id); });
+            menu.appendChild(b);
+        });
+        Object.entries(state.customModules).forEach(([id, m]) => {
+            const b = document.createElement('button');
+            b.className = `nav-btn${state.activeNavId === id ? ' active-nav' : ''}`;
+            const ico = m.icon && m.icon.startsWith('fa-') ? `<i class="${m.icon}"></i>` : '<i class="fa-solid fa-cube"></i>';
+            b.innerHTML = `<span class="nav-icon">${ico}</span><span class="nav-text">${escHtml(m.name)}</span>`;
+            b.addEventListener('click', () => { state.activeNavId = id; renderSidebar(); loadModule(m.url, m.name); });
+            menu.appendChild(b);
+        });
+        const sl = Object.entries(state.links).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+        if (sl.length) {
+            const lb = document.createElement('div'); lb.className = 'nav-section-label'; lb.textContent = 'Accesos rápidos'; ql.appendChild(lb);
+            sl.forEach(([id, l]) => {
+                const b = document.createElement('button'); b.className = 'nav-btn link-item'; b.dataset.id = id;
+                b.innerHTML = `<span class="nav-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></span><span class="nav-text">${escHtml(l.name)}</span>`;
+                b.addEventListener('click', () => window.open(l.url, '_blank', 'noopener'));
+                ql.appendChild(b);
+            });
+            if (window.Sortable) Sortable.create(ql, { animation: 150, filter: '.nav-section-label', onEnd: () => {
+                ql.querySelectorAll('.link-item').forEach((el, i) => { if (el.dataset.id && state.links[el.dataset.id] !== undefined) update(ref(db, `users/${state.uid}/links/${el.dataset.id}`), { order: i }); });
+            }});
+        }
+        if (window.Sortable) Sortable.create(menu, { animation: 150 });
+    }
+    function renderQuickLinks() { if (state.connected) renderSidebar(); }
+
+    /* ═══════════════════════════════════════
+       GESTORES DE MÓDULOS
+       ═══════════════════════════════════════ */
+    function handleModule(id) {
+        const ws = document.getElementById('workspace');
+        if (id === 'fixed') renderFixedManager(ws);
+        else if (id === 'scheduled') renderScheduledManager(ws);
+        else if (id === 'links') renderLinksManager(ws);
+    }
+
+    function renderFixedManager(ws) {
+        ws.innerHTML = `<h1>Tareas Fijas</h1><p class="workspace-subtitle">Tareas diarias recurrentes.</p>
+        <div class="form-card"><div class="form-row">
+            <div class="form-group" style="flex:3"><label class="form-label" for="fixedName">Descripción</label><input id="fixedName" class="form-input" placeholder="Nombre de la tarea..."></div>
+            <div class="form-group" style="flex:1;min-width:120px"><label class="form-label" for="fixedTime">Hora</label><input id="fixedTime" type="time" class="form-input"></div>
+            <div class="form-group" style="flex:0;min-width:auto"><label class="form-label">&nbsp;</label><button class="btn btn-primary" id="btnSaveFixed"><i class="fa-solid fa-plus"></i> Añadir</button></div>
+        </div></div><div id="fixed-manager-list"></div>`;
+        document.getElementById('btnSaveFixed').addEventListener('click', saveFixed);
+        ws.querySelectorAll('#fixedName,#fixedTime').forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') saveFixed(); }));
+        renderFixedList();
+    }
+    function renderFixedList() {
+        const l = document.getElementById('fixed-manager-list'); if (!l) return;
+        const items = Object.entries(state.tasks).filter(([, t]) => t.type === 'fixed');
+        if (!items.length) { l.innerHTML = '<div class="feed-empty" style="padding:2rem"><i class="fa-solid fa-thumbtack"></i>No hay tareas fijas</div>'; return; }
+        l.innerHTML = items.map(([id, t]) => `<div class="manager-item"><div><div class="manager-item-name">${escHtml(t.name)}</div><div class="manager-item-meta"><i class="fa-regular fa-clock"></i> ${formatTime(t.time)}</div></div><button class="btn-danger-ghost" data-dt="${id}"><i class="fa-solid fa-trash"></i></button></div>`).join('');
+        l.querySelectorAll('[data-dt]').forEach(b => b.addEventListener('click', () => deleteTask(b.dataset.dt)));
+    }
+    function saveFixed() {
+        const n = document.getElementById('fixedName').value.trim(), t = document.getElementById('fixedTime').value;
+        if (!n) { toast('Escribe un nombre', 'error'); return; }
+        if (!t) { toast('Selecciona hora', 'error'); return; }
+        push(ref(db, `users/${state.uid}/tasks`), { name: n, time: t, type: 'fixed', completedDate: '', history: '' });
+        document.getElementById('fixedName').value = ''; document.getElementById('fixedTime').value = '';
+        document.getElementById('fixedName').focus(); toast('Creada', 'success');
+    }
+
+    function renderScheduledManager(ws) {
+        ws.innerHTML = `<h1>Programación</h1><p class="workspace-subtitle">Tareas con fecha y hora.</p>
+        <div class="form-card"><div class="form-row">
+            <div class="form-group" style="flex:2"><label class="form-label" for="schedName">Descripción</label><input id="schedName" class="form-input" placeholder="Nombre..."></div>
+            <div class="form-group" style="flex:1.5;min-width:200px"><label class="form-label" for="schedDate">Fecha y hora</label><input id="schedDate" type="datetime-local" class="form-input"></div>
+            <div class="form-group" style="flex:0;min-width:auto"><label class="form-label">&nbsp;</label><button class="btn btn-primary" id="btnSaveSched"><i class="fa-solid fa-plus"></i> Programar</button></div>
+        </div></div><div id="scheduled-manager-list"></div>`;
+        document.getElementById('btnSaveSched').addEventListener('click', saveSched);
+        ws.querySelectorAll('#schedName,#schedDate').forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') saveSched(); }));
+        renderScheduledList();
+    }
+    function renderScheduledList() {
+        const l = document.getElementById('scheduled-manager-list'); if (!l) return;
+        const items = Object.entries(state.tasks).filter(([, t]) => t.type === 'scheduled' && !t.completed).sort((a, b) => (a[1].date || '').localeCompare(b[1].date || ''));
+        if (!items.length) { l.innerHTML = '<div class="feed-empty" style="padding:2rem"><i class="fa-solid fa-clock"></i>No hay tareas programadas</div>'; return; }
+        l.innerHTML = items.map(([id, t]) => {
+            const late = isLate(t.date);
+            return `<div class="manager-item" style="${late ? 'border-left:3px solid var(--danger)' : ''}"><div><div class="manager-item-name" ${late ? 'style="color:var(--danger)"' : ''}>${escHtml(t.name)} ${late ? '<i class="fa-solid fa-triangle-exclamation" style="font-size:0.7rem"></i>' : ''}</div><div class="manager-item-meta">${t.date ? t.date.replace('T', ' ').substring(0, 16) : '--'}</div></div><button class="btn-danger-ghost" data-dt="${id}"><i class="fa-solid fa-trash"></i></button></div>`;
+        }).join('');
+        l.querySelectorAll('[data-dt]').forEach(b => b.addEventListener('click', () => deleteTask(b.dataset.dt)));
+    }
+    function saveSched() {
+        const n = document.getElementById('schedName').value.trim(), d = document.getElementById('schedDate').value;
+        if (!n) { toast('Escribe un nombre', 'error'); return; }
+        if (!d) { toast('Selecciona fecha', 'error'); return; }
+        push(ref(db, `users/${state.uid}/tasks`), { name: n, date: d, type: 'scheduled', completed: false, history: '' });
+        document.getElementById('schedName').value = ''; document.getElementById('schedDate').value = '';
+        document.getElementById('schedName').focus(); toast('Programada', 'success');
+    }
+
+    function renderLinksManager(ws) {
+        ws.innerHTML = `<h1>Enlaces Rápidos</h1><p class="workspace-subtitle">Accesos directos para la barra lateral.</p>
+        <div class="form-card"><div class="form-row">
+            <div class="form-group" style="flex:1.5"><label class="form-label" for="linkName">Nombre</label><input id="linkName" class="form-input" placeholder="Nombre..."></div>
+            <div class="form-group" style="flex:2"><label class="form-label" for="linkUrl">URL</label><input id="linkUrl" type="url" class="form-input" placeholder="https://..."></div>
+            <div class="form-group" style="flex:0;min-width:auto"><label class="form-label">&nbsp;</label><button class="btn btn-primary" id="btnSaveLink"><i class="fa-solid fa-plus"></i></button></div>
+        </div></div><div id="link-list-manager"></div>`;
+        document.getElementById('btnSaveLink').addEventListener('click', saveLink);
+        ws.querySelectorAll('#linkName,#linkUrl').forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') saveLink(); }));
+        renderLinkList();
+    }
+    function renderLinkList() {
+        const l = document.getElementById('link-list-manager'); if (!l) return;
+        const items = Object.entries(state.links).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+        if (!items.length) { l.innerHTML = '<div class="feed-empty" style="padding:2rem"><i class="fa-solid fa-link"></i>No hay enlaces</div>'; return; }
+        l.innerHTML = items.map(([id, ln]) => `<div class="manager-item"><div><div class="manager-item-name">${escHtml(ln.name)}</div><div class="manager-item-meta" style="word-break:break-all">${escHtml(ln.url)}</div></div><button class="btn-danger-ghost" data-dl="${id}"><i class="fa-solid fa-trash"></i></button></div>`).join('');
+        l.querySelectorAll('[data-dl]').forEach(b => b.addEventListener('click', () => deleteLink(b.dataset.dl)));
+    }
+    function saveLink() {
+        const n = document.getElementById('linkName').value.trim(), u = document.getElementById('linkUrl').value.trim();
+        if (!n) { toast('Escribe un nombre', 'error'); return; }
+        if (!u) { toast('Introduce URL', 'error'); return; }
+        const o = Object.values(state.links).map(l => l.order || 0);
+        push(ref(db, `users/${state.uid}/links`), { name: n, url: u, order: o.length ? Math.max(...o) + 1 : 0 });
+        document.getElementById('linkName').value = ''; document.getElementById('linkUrl').value = '';
+        document.getElementById('linkName').focus(); toast('Guardado', 'success');
+    }
+
+    function deleteTask(id) {
+        const t = state.tasks[id]; if (!t) return;
+        if (!window.confirm(`¿Eliminar "${t.name || 'tarea'}"?`)) return;
+        remove(ref(db, `users/${state.uid}/tasks/${id}`)); toast('Eliminada', 'info');
+    }
+    function deleteLink(id) {
+        const l = state.links[id]; if (!l) return;
+        if (!window.confirm(`¿Eliminar "${l.name}"?`)) return;
+        remove(ref(db, `users/${state.uid}/links/${id}`)); toast('Eliminado', 'info');
+    }
+
+    function loadModule(url, name) {
+        document.getElementById('workspace').innerHTML = `<h1>${escHtml(name)}</h1><p class="workspace-subtitle">Contenido externo.</p><iframe src="${escHtml(url)}" title="${escHtml(name)}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>`;
+    }
+
+    /* ═══════════════════════════════════════
+       GESTOR DE MÓDULOS (sidebar)
+       ═══════════════════════════════════════ */
+    function renderModulesManager() {
+        const ws = document.getElementById('workspace');
+        ws.innerHTML = `<h1>Gestión de Módulos</h1><p class="workspace-subtitle">Activa, desactiva o añade módulos.</p>
+        <div class="add-module-box">
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:8px">Añadir módulo externo</h3>
+            <a href="https://fontawesome.com/search?o=r&m=free" target="_blank" rel="noopener" class="help-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Iconos FontAwesome</a>
+            <div class="form-row">
+                <div class="form-group" style="flex:0.8;min-width:140px"><label class="form-label" for="cm-icon">Icono</label><input id="cm-icon" class="form-input" placeholder="fa-solid fa-cube"></div>
+                <div class="form-group" style="flex:1;min-width:140px"><label class="form-label" for="cm-name">Nombre</label><input id="cm-name" class="form-input" placeholder="Nombre"></div>
+                <div class="form-group" style="flex:1.5;min-width:200px"><label class="form-label" for="cm-url">URL</label><input id="cm-url" class="form-input" placeholder="https://..."></div>
+                <div class="form-group" style="flex:0;min-width:auto"><label class="form-label">&nbsp;</label><button class="btn btn-primary" id="btnAddMod"><i class="fa-solid fa-plus"></i></button></div>
+            </div>
+        </div>
+        <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);margin-bottom:12px">Sistema</h3>
+        <div id="default-modules-list"></div>
+        <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);margin:20px 0 12px">Personalizados</h3>
+        <div id="custom-modules-list"></div>`;
+        document.getElementById('btnAddMod').addEventListener('click', addCustomModule);
+        ws.querySelectorAll('#cm-icon,#cm-name,#cm-url').forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') addCustomModule(); }));
+        renderModulesList();
+    }
+    function renderModulesList() {
+        const dl = document.getElementById('default-modules-list');
+        if (dl) {
+            dl.innerHTML = DEFAULT_MODULES.map(m => {
+                const s = state.moduleSettings.find(x => x.id === m.id); const on = !s || s.active !== false;
+                return `<div class="module-card"><div class="module-card-left"><div class="module-card-icon"><i class="${m.icon}"></i></div><div><div class="module-card-name">${m.name}</div><div class="module-card-sub">Sistema</div></div></div><label class="switch"><input type="checkbox" ${on ? 'checked' : ''} data-tm="${m.id}"><span class="slider"></span></label></div>`;
+            }).join('');
+            dl.querySelectorAll('[data-tm]').forEach(i => i.addEventListener('change', () => toggleMod(i.dataset.tm)));
+        }
+        const cl = document.getElementById('custom-modules-list');
+        if (cl) {
+            const e = Object.entries(state.customModules);
+            cl.innerHTML = e.length ? e.map(([id, m]) => {
+                const ico = m.icon && m.icon.startsWith('fa-') ? `<i class="${m.icon}"></i>` : '<i class="fa-solid fa-cube"></i>';
+                return `<div class="module-card"><div class="module-card-left"><div class="module-card-icon">${ico}</div><div><div class="module-card-name">${escHtml(m.name)}</div><div class="module-card-sub" style="word-break:break-all">${escHtml(m.url)}</div></div></div><button class="btn-danger-ghost" data-dm="${id}"><i class="fa-solid fa-trash"></i></button></div>`;
+            }).join('') : '<div class="feed-empty" style="padding:1.5rem"><i class="fa-solid fa-puzzle-piece"></i>Sin módulos</div>';
+            cl.querySelectorAll('[data-dm]').forEach(b => b.addEventListener('click', () => { const m = state.customModules[b.dataset.dm]; if (m && !window.confirm(`¿Eliminar "${m.name}"?`)) return; remove(ref(db, `users/${state.uid}/custom_modules/${b.dataset.dm}`)); toast('Eliminado', 'info'); }));
+        }
+    }
+    function addCustomModule() {
+        const icon = document.getElementById('cm-icon').value.trim() || 'fa-solid fa-cube';
+        const name = document.getElementById('cm-name').value.trim(), url = document.getElementById('cm-url').value.trim();
+        if (!name) { toast('Escribe nombre', 'error'); return; }
+        if (!url) { toast('Introduce URL', 'error'); return; }
+        push(ref(db, `users/${state.uid}/custom_modules`), { icon, name, url });
+        document.getElementById('cm-icon').value = ''; document.getElementById('cm-name').value = ''; document.getElementById('cm-url').value = '';
+        toast('Módulo añadido', 'success');
+    }
+    function toggleMod(id) {
+        const s = [...state.moduleSettings]; const i = s.findIndex(x => x.id === id);
+        if (i > -1) s[i].active = !s[i].active; else s.push({ id, active: false });
+        set(ref(db, `users/${state.uid}/settings/modules`), s);
+        toast(`${DEFAULT_MODULES.find(x => x.id === id)?.name || id} ${i > -1 ? (s[i].active ? 'activado' : 'desactivado') : 'desactivado'}`, 'info');
+    }
+
+    /* ═══════════════════════════════════════
+       MODAL DE TAREA
+       ═══════════════════════════════════════ */
+    function openTaskModal(id, t) {
+        state.modalTaskId = id; state.modalView = 'complete';
+        document.getElementById('m-taskName').textContent = t.name || 'Sin nombre';
+        document.getElementById('m-taskMeta').textContent = t.type === 'fixed' ? `Fija · ${formatTime(t.time)}` : `Programada · ${t.date ? t.date.replace('T', ' ').substring(0, 16) : '--'}`;
+        document.getElementById('m-solution').value = '';
+        document.getElementById('completion-zone').style.display = 'block';
+        document.getElementById('reschedule-zone').style.display = 'none';
+        document.getElementById('btnToggleView').innerHTML = '<i class="fa-solid fa-rotate"></i> REPROGRAMAR TAREA';
+        document.getElementById('actionModal').classList.add('visible');
+        setTimeout(() => document.getElementById('m-solution').focus(), 150);
+    }
+    function closeModal() { document.getElementById('actionModal').classList.remove('visible'); state.modalTaskId = null; }
+    function toggleModalView() {
+        if (state.modalView === 'complete') {
+            state.modalView = 'reschedule';
+            document.getElementById('completion-zone').style.display = 'none';
+            document.getElementById('reschedule-zone').style.display = 'block';
+            document.getElementById('btnToggleView').innerHTML = '<i class="fa-solid fa-rotate"></i> CONCLUIR TAREA';
+            const di = document.getElementById('m-new-date');
+            if (!di.value) { const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset()); di.value = n.toISOString().slice(0, 16); }
+            setTimeout(() => di.focus(), 100);
+        } else {
+            state.modalView = 'complete';
+            document.getElementById('completion-zone').style.display = 'block';
+            document.getElementById('reschedule-zone').style.display = 'none';
+            document.getElementById('btnToggleView').innerHTML = '<i class="fa-solid fa-rotate"></i> REPROGRAMAR TAREA';
+            setTimeout(() => document.getElementById('m-solution').focus(), 100);
+        }
+    }
+    function completeTask() {
+        if (!state.modalTaskId || !state.uid) return;
+        const t = state.tasks[state.modalTaskId]; if (!t) return;
+        const sol = document.getElementById('m-solution').value.trim() || 'Concluida.';
+        const ts = new Date().toLocaleString('es-ES');
+        const up = { history: (t.history || '') + `\n[${ts}] ${sol}` };
+        if (t.type === 'fixed') up.completedDate = todayStr(); else up.completed = true;
+        update(ref(db, `users/${state.uid}/tasks/${state.modalTaskId}`), up);
+        closeModal(); toast('Concluida', 'success');
+    }
+    function rescheduleTask() {
+        if (!state.modalTaskId || !state.uid) return;
+        const nd = document.getElementById('m-new-date').value;
+        if (!nd) { toast('Selecciona fecha', 'error'); return; }
+        const t = state.tasks[state.modalTaskId]; if (!t) return;
+        const ts = new Date().toLocaleString('es-ES');
+        const old = t.type === 'scheduled' ? (t.date || '--') : '--';
+        update(ref(db, `users/${state.uid}/tasks/${state.modalTaskId}`), { date: nd, history: (t.history || '') + `\n[${ts}] Reprogramada de ${old} a ${nd.replace('T', ' ')}`, completed: false });
+        closeModal(); toast('Reprogramada', 'success');
+    }
+    function deleteFromModal() { const id = state.modalTaskId; closeModal(); deleteTask(id); }
+
+    /* ═══════════════════════════════════════
+       CONFIGURACIÓN
+       ═══════════════════════════════════════ */
+    function openPassModal() {
+        document.getElementById('passInput').value = '';
+        document.getElementById('passError').classList.remove('visible');
+        document.getElementById('passModal').classList.add('visible');
+        setTimeout(() => document.getElementById('passInput').focus(), 150);
+    }
+    function closePassModal() { document.getElementById('passModal').classList.remove('visible'); }
+    function submitPassword() {
+        if (document.getElementById('passInput').value === 'Megasur-,20') {
+            closePassModal(); toast('Acceso concedido', 'success'); openConfigPanel();
+        } else {
+            document.getElementById('passError').classList.add('visible');
+            document.getElementById('passInput').value = '';
+            document.getElementById('passInput').focus();
+            const body = document.querySelector('#passModal .modal-body');
+            body.style.animation = 'none'; body.offsetHeight; body.style.animation = 'shake 0.4s ease';
+        }
+    }
+
+    function openConfigPanel() {
+        state.activeNavId = null; renderSidebar();
+        configUsersRef = ref(db, 'config/registered_users');
+        onValue(configUsersRef, s => { state.registeredUsers = s.val() || {}; renderConfigUsers(); });
+        const ws = document.getElementById('workspace');
+        ws.innerHTML = `
+            <div class="config-header-bar"><div>
+                <h1><i class="fa-solid fa-shield-halved" style="color:var(--accent);margin-right:6px"></i>Configuración</h1>
+                <p class="workspace-subtitle" style="margin-bottom:0">Usuarios registrados via Google</p>
+            </div><span class="stat-chip" id="userCountChip"><i class="fa-solid fa-users"></i> 0</span></div>
+            <div id="config-user-list"></div>`;
+        renderConfigUsers();
+    }
+    function renderConfigUsers() {
+        const l = document.getElementById('config-user-list'), chip = document.getElementById('userCountChip');
+        if (!l) return;
+        const entries = Object.entries(state.registeredUsers);
+        if (chip) chip.innerHTML = `<i class="fa-solid fa-users"></i> ${entries.length}`;
+        if (!entries.length) { l.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)"><i class="fa-solid fa-users-slash" style="font-size:2.5rem;display:block;margin-bottom:1rem;opacity:0.25"></i><p style="font-size:0.85rem">Ningún usuario se ha registrado aún</p></div>'; return; }
+        entries.sort((a, b) => (b[1].lastLogin || '').localeCompare(a[1].lastLogin || ''));
+        l.innerHTML = entries.map(([uid, u]) => {
+            const photo = u.photo || '';
+            const name = u.name || 'Sin nombre';
+            const initials = name.substring(0, 2).toUpperCase();
+            const cr = u.firstLogin ? new Date(u.firstLogin).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+            const ll = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+            const isMe = uid === state.uid;
+            return `<div class="user-card" ${isMe ? 'style="border-left:3px solid var(--accent)"' : ''}>
+                <div class="user-avatar-sm ${photo ? '' : 'no-photo'}"><img src="${escHtml(photo)}" alt=""><span>${escHtml(initials)}</span></div>
+                <div class="user-card-info">
+                    <div class="user-card-name">${escHtml(name)} ${isMe ? '<span style="font-size:0.65rem;color:var(--accent);font-weight:700;margin-left:6px">TU CUENTA</span>' : ''}</div>
+                    <div class="user-card-email">${escHtml(u.email || uid)}</div>
+                    <div class="user-card-date">${cr ? 'Registro: ' + cr : ''} ${ll ? '· Último acceso: ' + ll : ''}</div>
+                </div>
+                <div class="user-card-actions">
+                    ${!isMe ? `<button class="btn-danger-ghost" data-ru="${uid}"><i class="fa-solid fa-trash"></i> Eliminar</button>` : '<span style="font-size:0.65rem;color:var(--text-muted)">Activa</span>'}
+                </div>
+            </div>`;
+        }).join('');
+        l.querySelectorAll('[data-ru]').forEach(b => b.addEventListener('click', () => {
+            const uid = b.dataset.ru; const u = state.registeredUsers[uid]; const n = u ? (u.name || u.email || uid) : uid;
+            if (!window.confirm(`¿Eliminar "${n}" y todos sus datos (tareas, enlaces, módulos)?`)) return;
+            remove(ref(db, `users/${uid}`));
+            remove(ref(db, `config/registered_users/${uid}`));
+            toast(`"${n}" eliminado`, 'info');
+        }));
+    }
+
+    /* ═══════════════════════════════════════
+       EVENT LISTENERS
+       ═══════════════════════════════════════ */
+    document.getElementById('btnSidebarSignIn').addEventListener('click', doSignIn);
+    document.getElementById('btnSignOut').addEventListener('click', doSignOut);
+    document.getElementById('btnModules').addEventListener('click', () => { state.activeNavId = null; renderSidebar(); renderModulesManager(); });
+    document.getElementById('btnConfig').addEventListener('click', openPassModal);
+    document.getElementById('btnPassSubmit').addEventListener('click', submitPassword);
+    document.getElementById('btnPassCancel').addEventListener('click', closePassModal);
+    document.getElementById('passInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitPassword(); });
+    document.getElementById('passModal').addEventListener('click', e => { if (e.target === e.currentTarget) closePassModal(); });
+    document.getElementById('btnCompleteTask').addEventListener('click', completeTask);
+    document.getElementById('btnRescheduleTask').addEventListener('click', rescheduleTask);
+    document.getElementById('btnToggleView').addEventListener('click', toggleModalView);
+    document.getElementById('btnDeleteFromModal').addEventListener('click', deleteFromModal);
+    document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+    document.getElementById('actionModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            if (document.getElementById('passModal').classList.contains('visible')) closePassModal();
+            else if (document.getElementById('actionModal').classList.contains('visible')) closeModal();
+        }
+    });
+</script>
 </body>
 </html>
