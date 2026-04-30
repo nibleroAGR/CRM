@@ -14,10 +14,10 @@
     --warning: #f59e0b;
     --info: #3b82f6;
 
-    /* Task Card Colors (Paper-like for office feel) */
-    --task-daily: #e4e4e7; /* Zinc 200 */
-    --task-prog: #d4d4d8; /* Zinc 300 */
-    --task-text: #18181b; /* Dark text for contrast */
+    /* Task Card Colors (Pastel for office feel) */
+    --task-daily: #fef08a; /* Pastel Yellow */
+    --task-prog: #bfdbfe; /* Pastel Blue */
+    --task-text: #0f172a; /* Dark text for contrast */
 
     /* Glassmorphism settings */
     --glass-bg: rgba(255, 255, 255, 0.03);
@@ -292,8 +292,8 @@ input:checked + .slider:before { transform: translateX(20px); }
     border-right: 1px solid rgba(0,0,0,0.05); border-top: 1px solid rgba(0,0,0,0.05); border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 .tarea-tarjeta:hover { transform: translateX(-4px) scale(1.02); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
-.tarea-tarjeta.diaria { background: var(--task-daily); border-left: 5px solid #a1a1aa; }
-.tarea-tarjeta.prog { background: var(--task-prog); border-left: 5px solid #52525b; }
+.tarea-tarjeta.diaria { background: var(--task-daily); border-left: 5px solid #eab308; }
+.tarea-tarjeta.prog { background: var(--task-prog); border-left: 5px solid #3b82f6; }
 .tarea-tarjeta strong { font-size: 0.95rem; font-weight: 600; }
 .tarea-tarjeta span { font-size: 0.8rem; font-weight: 700; opacity: 0.8; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;}
 
