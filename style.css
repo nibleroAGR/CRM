@@ -223,14 +223,15 @@ select.input-estilo { appearance: none; cursor: pointer; }
 .sortable-drag { cursor: grabbing !important; }
 .links-container .sortable-ghost { opacity: 0.4; }
 
-.links-container { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
+.divider-side { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0; }
+
+.links-container { padding: 0; display: flex; flex-direction: column; }
 .links-container a { 
-    display: flex; align-items: center; gap: 8px;
-    color: var(--sidebar-text-muted); font-size: 0.85rem; padding: 10px 12px; 
-    background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); 
-    border-radius: var(--border-radius-sm); text-decoration: none; transition: var(--transition);
+    display: flex; align-items: center; gap: 12px; padding: 12px 24px; 
+    color: var(--sidebar-text-muted); text-decoration: none; font-weight: 500; font-size: 0.95rem; transition: var(--transition);
 }
-.links-container a:hover { color: var(--sidebar-text); border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05); }
+.links-container a i { width: 20px; text-align: center; font-size: 1.1rem; }
+.links-container a:hover { color: var(--sidebar-text); background: rgba(255,255,255,0.05); }
 
 /* ==================== CENTER CONTENT ==================== */
 .vista-modulo { padding: 10px 20px 40px; animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1); height: 100%; }
