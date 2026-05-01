@@ -125,8 +125,9 @@ body {
 .btn-icon:hover { color: var(--danger); background: rgba(244, 63, 94, 0.1); }
 
 /* ==================== FORMS ==================== */
-.input-group { position: relative; width: 100%; }
+.input-group { position: relative; width: 100%; margin-bottom: 16px; }
 .input-group i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+.input-group .input-estilo { padding-left: 45px; }
 
 .input-estilo {
     background: #ffffff; 
@@ -161,8 +162,35 @@ select.input-estilo { appearance: none; cursor: pointer; }
 .error-message { color: var(--danger); font-size: 0.85rem; text-align: center; min-height: 20px; font-weight: 500; }
 
 /* ==================== AUTHENTICATION ==================== */
-.auth-wrapper { height: 100vh; display: flex; align-items: center; justify-content: center; }
-.auth-panel { padding: 40px; width: 100%; max-width: 420px; animation: scaleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); background: #ffffff; border-radius: var(--border-radius); box-shadow: var(--card-shadow); border: 1px solid var(--card-border); }
+.auth-wrapper { 
+    height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #3b82f6 100%);
+    position: relative;
+    overflow: hidden;
+}
+.auth-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.2) 0%, transparent 40%),
+                      radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
+    pointer-events: none;
+}
+.auth-panel { 
+    position: relative;
+    z-index: 10;
+    padding: 50px 40px; 
+    width: 100%; 
+    max-width: 440px; 
+    animation: scaleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); 
+    background: rgba(255, 255, 255, 0.98); 
+    border-radius: 24px; 
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+    border: 1px solid rgba(255, 255, 255, 0.2); 
+}
 @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
 .logo { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 1.8rem; margin-bottom: 5px; font-weight: 700; color: var(--text-primary);}

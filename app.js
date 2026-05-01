@@ -570,11 +570,7 @@ function renderizarModulosCombinados() {
             listaNav.appendChild(li);
         }
 
-        // Si Enlaces está desactivado, esconder la cabecera de Mis Enlaces
-        if(mod.id === 'fijo_enlaces') {
-            const headerEnlaces = document.getElementById('header-enlaces');
-            if(headerEnlaces) headerEnlaces.style.display = isActivo ? 'flex' : 'none';
-        }
+        // Lógica de Enlaces ocultos controlada desde otro lado si es necesario
 
         // Renderizar en Ajustes
         const tarjeta = document.createElement('div');

@@ -36,11 +36,11 @@
             <form id="login-form">
                 <div class="input-group">
                     <i class="fa-solid fa-envelope"></i>
-                    <input type="email" id="email" placeholder="Correo electrónico" required>
+                    <input type="email" id="email" class="input-estilo" placeholder="Correo electrónico" required>
                 </div>
                 <div class="input-group">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="password" placeholder="Contraseña" required>
+                    <input type="password" id="password" class="input-estilo" placeholder="Contraseña" required>
                 </div>
                 <div id="auth-error" class="error-message"></div>
                 
@@ -81,10 +81,6 @@
                 </nav>
 
                 <hr class="divider-side">
-                
-                <div class="side-header" id="header-enlaces">
-                    <i class="fa-solid fa-globe"></i> Mis Enlaces
-                </div>
                 <nav class="side-nav mb-20">
                     <div id="lista-enlaces-dinamicos" class="links-container">
                         <!-- Se llenará con JS -->
@@ -203,23 +199,24 @@
                                 </div>
                             </div>
 
-                            <div class="input-group mb-10">
-                                <i class="fa-solid fa-signature"></i>
-                                <input type="text" id="perfil-nombre" class="input-estilo" placeholder="Nombre completo" required>
+                            <div class="mb-10">
+                                <label class="text-sm text-muted">Nombre completo</label>
+                                <input type="text" id="perfil-nombre" class="input-estilo" placeholder="Ej. Juan Pérez" required>
                             </div>
                             
                             <div class="flex-row mb-10" style="gap:10px;">
-                                <div class="input-group flex-1">
-                                    <i class="fa-solid fa-phone"></i>
-                                    <input type="tel" id="perfil-telefono" class="input-estilo" placeholder="Teléfono">
+                                <div class="flex-1">
+                                    <label class="text-sm text-muted">Teléfono</label>
+                                    <input type="tel" id="perfil-telefono" class="input-estilo" placeholder="Ej. 600 000 000">
                                 </div>
-                                <div class="input-group" style="width:120px;">
-                                    <i class="fa-solid fa-phone-flip"></i>
-                                    <input type="text" id="perfil-ext" class="input-estilo" placeholder="Ext.">
+                                <div style="width:120px;">
+                                    <label class="text-sm text-muted">Ext.</label>
+                                    <input type="text" id="perfil-ext" class="input-estilo" placeholder="Ej. 101">
                                 </div>
                             </div>
 
                             <div class="mb-20">
+                                <label class="text-sm text-muted">Presentación</label>
                                 <textarea id="perfil-presentacion" class="input-estilo w-100" rows="3" placeholder="Una pequeña presentación sobre tu rol..."></textarea>
                             </div>
 
@@ -231,13 +228,13 @@
                             <h3 class="mb-20 text-danger" style="border-bottom:1px solid var(--card-border); padding-bottom:10px;"><i class="fa-solid fa-shield-halved"></i> Seguridad</h3>
                             <p class="text-sm text-muted mb-20">Cambia tu contraseña de acceso.</p>
 
-                            <div class="input-group mb-10">
-                                <i class="fa-solid fa-lock"></i>
-                                <input type="password" id="perfil-pass-new" class="input-estilo" placeholder="Nueva contraseña" minlength="6" required>
+                            <div class="mb-10">
+                                <label class="text-sm text-muted">Nueva contraseña</label>
+                                <input type="password" id="perfil-pass-new" class="input-estilo" placeholder="Mínimo 6 caracteres" minlength="6" required>
                             </div>
-                            <div class="input-group mb-20">
-                                <i class="fa-solid fa-lock"></i>
-                                <input type="password" id="perfil-pass-confirm" class="input-estilo" placeholder="Confirmar contraseña" minlength="6" required>
+                            <div class="mb-20">
+                                <label class="text-sm text-muted">Confirmar contraseña</label>
+                                <input type="password" id="perfil-pass-confirm" class="input-estilo" placeholder="Mínimo 6 caracteres" minlength="6" required>
                             </div>
 
                             <button type="submit" class="btn btn-danger"><i class="fa-solid fa-key"></i> Actualizar Contraseña</button>
