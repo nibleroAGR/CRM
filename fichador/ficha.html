@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fichador de Trabajo</title>
+    <title>Fichador y Programación de Turnos</title>
     
-    <!-- Librerías de la nube (v8 para compatibilidad con tu sintaxis) -->
+    <!-- Librerías de la nube -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -14,11 +14,13 @@
     <style>
         :root {
             --primary: #4F46E5;
+            --secondary: #6366F1;
             --success: #10B981;
             --danger: #EF4444;
             --background: #F3F4F6;
             --card: #FFFFFF;
             --text: #1F2937;
+            --border: #E5E7EB;
         }
 
         body {
@@ -30,6 +32,8 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .container {
@@ -38,11 +42,12 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             box-sizing: border-box;
         }
 
-        h2 { margin-top: 0; text-align: center; }
+        h2, h3 { margin-top: 0; text-align: center; }
+        h3 { font-size: 1.1rem; color: #4B5563; margin-bottom: 15px; }
 
         .hidden { display: none !important; }
 
@@ -51,11 +56,25 @@
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #D1D5DB;
+            border: 1px solid var(--border);
             border-radius: 6px;
             box-sizing: border-box;
             font-family: inherit;
         }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #4B5563;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 10px;
+        }
+        .flex-col { flex: 1; }
 
         button {
             width: 100%;
@@ -73,6 +92,7 @@
         button:disabled { background: #9CA3AF; cursor: not-allowed; }
 
         .btn-primary { background-color: var(--primary); }
+        .btn-secondary { background-color: var(--secondary); }
         .btn-success { background-color: var(--success); }
         .btn-danger { background-color: var(--danger); }
         
@@ -80,20 +100,20 @@
             background: transparent;
             color: var(--danger);
             border: 1px solid var(--danger);
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         /* Reloj y Usuario */
         .user-info {
             text-align: center;
             margin-bottom: 20px;
-            font-size: 0.9rem;
-            color: #6B7280;
+            font-size: 1.1rem;
+            color: #374151;
         }
 
         .clock-container {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             padding: 15px;
             background: #EFF6FF;
             border-radius: 8px;
@@ -102,16 +122,18 @@
         #time { font-size: 2.5rem; font-weight: bold; color: var(--primary); }
         #date { font-size: 1rem; color: #4B5563; }
 
-        .file-upload-wrapper {
-            margin-bottom: 15px;
-            font-size: 0.85rem;
+        .divider {
+            height: 1px;
+            background-color: var(--border);
+            margin: 25px 0;
         }
 
-        #statusMessage {
+        .status-message {
             text-align: center;
             font-size: 0.9rem;
             margin-top: 10px;
             font-weight: bold;
+            min-height: 20px;
         }
     </style>
 </head>
@@ -119,7 +141,7 @@
 
     <!-- PANTALLA DE LOGIN -->
     <div id="loginView" class="container">
-        <h2>Acceso al Fichador</h2>
+        <h2>Acceso al Sistema</h2>
         <input type="email" id="email" placeholder="Correo electrónico" required>
         <input type="password" id="password" placeholder="Contraseña" required>
         <button id="btnLogin" class="btn-primary">Iniciar Sesión</button>
@@ -129,31 +151,54 @@
     <!-- PANTALLA PRINCIPAL (DASHBOARD) -->
     <div id="dashboardView" class="container hidden">
         <div class="user-info">
-            Conectado como: <strong id="userDisplay"></strong>
+            Hola, <strong id="userDisplay">Cargando...</strong>
         </div>
 
+        <!-- SECCIÓN 1: FICHAR EN TIEMPO REAL -->
         <div class="clock-container">
             <div id="time">00:00:00</div>
             <div id="date">Cargando fecha...</div>
         </div>
 
-        <textarea id="comentario" rows="3" placeholder="Añadir comentario (ej. motivo de retraso)..."></textarea>
+        <textarea id="observaciones" rows="2" placeholder="Observaciones (ej. motivo de retraso)..."></textarea>
         
-        <div class="file-upload-wrapper">
-            <label for="justificante"><strong>Adjuntar justificante (Foto o PDF):</strong></label><br>
-            <input type="file" id="justificante" accept="image/*,.pdf" style="margin-top: 5px;">
+        <label for="justificante">Adjuntar justificante (Foto o PDF):</label>
+        <input type="file" id="justificante" accept="image/*,.pdf">
+
+        <div class="flex-row">
+            <button id="btnEntrada" class="btn-success flex-col" onclick="registrarFichaje('Entrada')">ENTRADA</button>
+            <button id="btnSalida" class="btn-danger flex-col" onclick="registrarFichaje('Salida')">SALIDA</button>
+        </div>
+        <div id="fichajeStatus" class="status-message"></div>
+
+        <div class="divider"></div>
+
+        <!-- SECCIÓN 2: PROGRAMAR TURNOS (PARA LA OTRA WEB) -->
+        <h3>Programar Turnos Futuros</h3>
+        <label for="progFecha">Fecha del turno:</label>
+        <input type="date" id="progFecha">
+        
+        <div class="flex-row">
+            <div class="flex-col">
+                <label for="progHoraEntrada">Hora Entrada:</label>
+                <input type="time" id="progHoraEntrada">
+            </div>
+            <div class="flex-col">
+                <label for="progHoraSalida">Hora Salida:</label>
+                <input type="time" id="progHoraSalida">
+            </div>
         </div>
 
-        <button id="btnEntrada" class="btn-success" onclick="registrarFichaje('Entrada')">MARCAR ENTRADA</button>
-        <button id="btnSalida" class="btn-danger" onclick="registrarFichaje('Salida')">MARCAR SALIDA</button>
-        
-        <div id="statusMessage"></div>
+        <button id="btnProgramar" class="btn-secondary" onclick="programarTurnos()">Añadir a Tareas del CRM</button>
+        <div id="progStatus" class="status-message"></div>
+
+        <div class="divider"></div>
 
         <button id="btnLogout" class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
     </div>
 
     <script>
-        // 1. Configuración de tu base de datos
+        // 1. Configuración de Base de Datos
         const firebaseConfig = {
             apiKey: "AIzaSyCqTyb7FvBVRZKAnB_7g8VMvONfI7QKWjE",
             authDomain: "crmv1-21322.firebaseapp.com",
@@ -161,148 +206,176 @@
             projectId: "crmv1-21322",
             storageBucket: "crmv1-21322.firebasestorage.app",
             messagingSenderId: "892438558015",
-            appId: "1:892438558015:web:fccee492b12470628f8f8a",
-            measurementId: "G-7BYG21GK2T"
+            appId: "1:892438558015:web:fccee492b12470628f8f8a"
         };
 
-        // Inicializar servicios
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
         const storage = firebase.storage();
 
-        // Referencias del DOM
         const loginView = document.getElementById('loginView');
         const dashboardView = document.getElementById('dashboardView');
         const userDisplay = document.getElementById('userDisplay');
         const btnLogin = document.getElementById('btnLogin');
-        const loginError = document.getElementById('loginError');
-        const statusMessage = document.getElementById('statusMessage');
+        let nombreUsuarioActual = "";
 
-        // Lógica del Reloj
+        // Reloj
         function actualizarReloj() {
             const ahora = new Date();
             const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            
             document.getElementById('time').innerText = ahora.toLocaleTimeString('es-ES');
-            // Capitalizar la primera letra del día
             let fechaTexto = ahora.toLocaleDateString('es-ES', opcionesFecha);
             document.getElementById('date').innerText = fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1);
         }
         setInterval(actualizarReloj, 1000);
         actualizarReloj();
 
-        // Gestión de Estado de Autenticación
-        auth.onAuthStateChanged(user => {
+        // Autenticación
+        auth.onAuthStateChanged(async user => {
             if (user) {
-                // Usuario conectado
+                try {
+                    const userDoc = await db.collection('usuarios').doc(user.uid).get();
+                    nombreUsuarioActual = (userDoc.exists && userDoc.data().nombre) ? userDoc.data().nombre : (user.displayName || user.email.split('@')[0]);
+                } catch (error) {
+                    nombreUsuarioActual = user.displayName || user.email.split('@')[0];
+                }
                 loginView.classList.add('hidden');
                 dashboardView.classList.remove('hidden');
-                userDisplay.innerText = user.email;
+                userDisplay.innerText = nombreUsuarioActual;
             } else {
-                // No hay usuario
                 loginView.classList.remove('hidden');
                 dashboardView.classList.add('hidden');
             }
         });
 
-        // Iniciar Sesión
         btnLogin.addEventListener('click', () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
-            
-            if(!email || !pass) {
-                loginError.innerText = "Por favor, rellena todos los campos.";
-                return;
-            }
-
+            if(!email || !pass) return;
             btnLogin.disabled = true;
-            btnLogin.innerText = "Iniciando...";
-
-            auth.signInWithEmailAndPassword(email, pass)
-                .then(() => {
-                    document.getElementById('email').value = '';
-                    document.getElementById('password').value = '';
-                    loginError.innerText = '';
-                })
-                .catch(error => {
-                    loginError.innerText = "Error: Usuario o contraseña incorrectos.";
-                })
-                .finally(() => {
-                    btnLogin.disabled = false;
-                    btnLogin.innerText = "Iniciar Sesión";
-                });
+            auth.signInWithEmailAndPassword(email, pass).catch(() => {
+                document.getElementById('loginError').innerText = "Credenciales incorrectas.";
+            }).finally(() => btnLogin.disabled = false);
         });
 
-        // Cerrar Sesión
-        function cerrarSesion() {
-            auth.signOut();
-        }
+        function cerrarSesion() { auth.signOut(); }
 
-        // Lógica para registrar Entrada/Salida
+        // --- FUNCIONALIDAD 1: FICHAR EN EL MOMENTO ---
         async function registrarFichaje(tipo) {
             const user = auth.currentUser;
             if (!user) return;
 
             const btnE = document.getElementById('btnEntrada');
             const btnS = document.getElementById('btnSalida');
-            const comentarioInput = document.getElementById('comentario');
-            const archivoInput = document.getElementById('justificante');
-            const archivo = archivoInput.files[0];
+            const status = document.getElementById('fichajeStatus');
+            const archivo = document.getElementById('justificante').files[0];
 
-            // Bloquear botones mientras procesa
-            btnE.disabled = true;
-            btnS.disabled = true;
-            statusMessage.style.color = "var(--text)";
-            statusMessage.innerText = "Guardando registro en la nube...";
+            btnE.disabled = btnS.disabled = true;
+            status.style.color = "var(--text)";
+            status.innerText = "Registrando...";
 
             try {
                 let urlArchivo = null;
-
-                // Si hay un archivo, subirlo primero a la nube
                 if (archivo) {
-                    statusMessage.innerText = "Subiendo justificante...";
-                    // Crear un nombre único para el archivo
-                    const nombreArchivo = `${Date.now()}_${archivo.name}`;
-                    const storageRef = storage.ref(`justificantes/${user.uid}/${nombreArchivo}`);
+                    const storageRef = storage.ref(`justificantes/${user.uid}/${Date.now()}_${archivo.name}`);
                     const uploadTask = await storageRef.put(archivo);
                     urlArchivo = await uploadTask.ref.getDownloadURL();
                 }
 
-                // Guardar los datos del fichaje
-                const nuevoFichaje = {
+                const ahora = new Date();
+                await db.collection("fichajes").add({
                     usuarioId: user.uid,
-                    email: user.email,
-                    tipo: tipo, // 'Entrada' o 'Salida'
-                    fechaHora: firebase.firestore.FieldValue.serverTimestamp(),
-                    fechaLocal: new Date().toLocaleString('es-ES'),
-                    comentario: comentarioInput.value,
+                    nombre: nombreUsuarioActual,
+                    tipo: tipo,
+                    fecha: ahora.toLocaleDateString('es-ES'),
+                    hora: ahora.toLocaleTimeString('es-ES'),
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    observaciones: document.getElementById('observaciones').value,
                     urlJustificante: urlArchivo
+                });
+
+                status.style.color = "var(--success)";
+                status.innerText = `¡${tipo} marcada a las ${ahora.toLocaleTimeString('es-ES')}!`;
+                document.getElementById('observaciones').value = '';
+                document.getElementById('justificante').value = '';
+            } catch (error) {
+                status.style.color = "var(--danger)";
+                status.innerText = "Error al guardar el registro.";
+            } finally {
+                btnE.disabled = btnS.disabled = false;
+                setTimeout(() => status.innerText = "", 5000);
+            }
+        }
+
+        // --- FUNCIONALIDAD 2: PROGRAMAR TURNOS PARA EL CRM ---
+        async function programarTurnos() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const fecha = document.getElementById('progFecha').value; // Formato YYYY-MM-DD
+            const horaEntrada = document.getElementById('progHoraEntrada').value;
+            const horaSalida = document.getElementById('progHoraSalida').value;
+            const btnProg = document.getElementById('btnProgramar');
+            const status = document.getElementById('progStatus');
+
+            if (!fecha || !horaEntrada || !horaSalida) {
+                status.style.color = "var(--danger)";
+                status.innerText = "Rellena la fecha y ambas horas.";
+                setTimeout(() => status.innerText = "", 3000);
+                return;
+            }
+
+            btnProg.disabled = true;
+            status.style.color = "var(--text)";
+            status.innerText = "Enviando a tareas...";
+
+            try {
+                // Tarea 1: La Entrada
+                const tareaEntrada = {
+                    categoria: "Fija", // Etiqueta para que la web principal sepa dónde colocarla (3ª columna)
+                    titulo: `Turno Entrada - ${nombreUsuarioActual}`,
+                    descripcion: `Hora de entrada programada.`,
+                    fechaRequerida: fecha,
+                    horaRequerida: horaEntrada,
+                    estado: "Pendiente",
+                    usuarioId: user.uid,
+                    nombreUsuario: nombreUsuarioActual,
+                    creadoEn: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                await db.collection("fichajes").add(nuevoFichaje);
+                // Tarea 2: La Salida
+                const tareaSalida = {
+                    categoria: "Fija", 
+                    titulo: `Turno Salida - ${nombreUsuarioActual}`,
+                    descripcion: `Hora de salida programada.`,
+                    fechaRequerida: fecha,
+                    horaRequerida: horaSalida,
+                    estado: "Pendiente",
+                    usuarioId: user.uid,
+                    nombreUsuario: nombreUsuarioActual,
+                    creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+                };
 
-                // Éxito
-                statusMessage.style.color = "var(--success)";
-                statusMessage.innerText = `¡${tipo} registrada correctamente a las ${new Date().toLocaleTimeString('es-ES')}!`;
+                // Guardar ambas en la colección "tareas"
+                await db.collection("tareas").add(tareaEntrada);
+                await db.collection("tareas").add(tareaSalida);
+
+                status.style.color = "var(--success)";
+                status.innerText = "¡Turnos añadidos al panel de tareas!";
                 
                 // Limpiar campos
-                comentarioInput.value = '';
-                archivoInput.value = '';
+                document.getElementById('progFecha').value = '';
+                document.getElementById('progHoraEntrada').value = '';
+                document.getElementById('progHoraSalida').value = '';
 
             } catch (error) {
-                console.error("Error guardando el registro:", error);
-                statusMessage.style.color = "var(--danger)";
-                statusMessage.innerText = "Ocurrió un error al guardar. Inténtalo de nuevo.";
+                console.error("Error:", error);
+                status.style.color = "var(--danger)";
+                status.innerText = "Error al programar el turno.";
             } finally {
-                // Desbloquear botones
-                btnE.disabled = false;
-                btnS.disabled = false;
-                
-                // Ocultar mensaje después de 5 segundos
-                setTimeout(() => {
-                    statusMessage.innerText = "";
-                }, 5000);
+                btnProg.disabled = false;
+                setTimeout(() => status.innerText = "", 5000);
             }
         }
     </script>
