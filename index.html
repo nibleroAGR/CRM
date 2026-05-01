@@ -62,8 +62,10 @@
         <header class="topbar glass-panel">
             <div class="logo-small"><i class="fa-solid fa-chart-pie"></i> CRM</div>
             <div class="user-profile">
-                <span id="user-name">Usuario</span>
-                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="verVista('vista-perfil')" title="Mi Perfil">
+                    <span id="user-name">Usuario</span>
+                    <div class="avatar" id="topbar-avatar"><i class="fa-solid fa-user"></i></div>
+                </div>
                 <button id="btn-logout" class="btn-icon" title="Cerrar sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
             </div>
         </header>
@@ -176,6 +178,71 @@
                 <!-- Vista Iframe Módulo -->
                 <div id="vista-iframe" class="vista-modulo hidden iframe-contenedor">
                     <iframe id="iframe-app" src="" frameborder="0" allowfullscreen></iframe>
+                </div>
+
+                <!-- Vista Perfil de Usuario -->
+                <div id="vista-perfil" class="vista-modulo hidden">
+                    <h2><i class="fa-solid fa-id-card"></i> Mi Perfil</h2>
+                    <p class="text-muted mb-20">Gestiona tus datos personales y credenciales de acceso.</p>
+                    
+                    <div class="perfil-layout">
+                        <!-- Datos Personales -->
+                        <form id="form-perfil" class="glass-panel p-20 perfil-seccion">
+                            <h3 class="mb-20" style="border-bottom:1px solid var(--card-border); padding-bottom:10px;"><i class="fa-solid fa-user-pen"></i> Datos Personales</h3>
+                            
+                            <div class="avatar-upload-container mb-20">
+                                <div class="avatar-large" id="perfil-avatar-preview">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <div class="avatar-actions">
+                                    <label class="btn btn-sm btn-primary" style="cursor:pointer;">
+                                        <i class="fa-solid fa-upload"></i> Subir Foto
+                                        <input type="file" id="perfil-foto-input" accept="image/png, image/jpeg" class="hidden">
+                                    </label>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="eliminarFotoPerfil()"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="input-group mb-10">
+                                <i class="fa-solid fa-signature"></i>
+                                <input type="text" id="perfil-nombre" class="input-estilo" placeholder="Nombre completo" required>
+                            </div>
+                            
+                            <div class="flex-row mb-10" style="gap:10px;">
+                                <div class="input-group flex-1">
+                                    <i class="fa-solid fa-phone"></i>
+                                    <input type="tel" id="perfil-telefono" class="input-estilo" placeholder="Teléfono">
+                                </div>
+                                <div class="input-group" style="width:120px;">
+                                    <i class="fa-solid fa-phone-flip"></i>
+                                    <input type="text" id="perfil-ext" class="input-estilo" placeholder="Ext.">
+                                </div>
+                            </div>
+
+                            <div class="mb-20">
+                                <textarea id="perfil-presentacion" class="input-estilo w-100" rows="3" placeholder="Una pequeña presentación sobre tu rol..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Guardar Perfil</button>
+                        </form>
+
+                        <!-- Seguridad -->
+                        <form id="form-password" class="glass-panel p-20 perfil-seccion">
+                            <h3 class="mb-20 text-danger" style="border-bottom:1px solid var(--card-border); padding-bottom:10px;"><i class="fa-solid fa-shield-halved"></i> Seguridad</h3>
+                            <p class="text-sm text-muted mb-20">Cambia tu contraseña de acceso.</p>
+
+                            <div class="input-group mb-10">
+                                <i class="fa-solid fa-lock"></i>
+                                <input type="password" id="perfil-pass-new" class="input-estilo" placeholder="Nueva contraseña" minlength="6" required>
+                            </div>
+                            <div class="input-group mb-20">
+                                <i class="fa-solid fa-lock"></i>
+                                <input type="password" id="perfil-pass-confirm" class="input-estilo" placeholder="Confirmar contraseña" minlength="6" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger"><i class="fa-solid fa-key"></i> Actualizar Contraseña</button>
+                        </form>
+                    </div>
                 </div>
 
             </section>

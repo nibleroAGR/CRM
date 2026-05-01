@@ -181,6 +181,166 @@ function iniciarListeners(uid) {
     unsubscribes.push(userRef.collection('history').orderBy('fecha', 'desc').onSnapshot(snap => {
         renderizarHistorial(snap.docs.map(d => ({id: d.id, ...d.data()})));
     }));
+
+    // 7. Perfil de usuario (doc principal)
+    unsubscribes.push(userRef.onSnapshot(snap => {
+        if(snap.exists) {
+            actualizarUIPerfil(snap.data(), auth.currentUser);
+        } else {
+            actualizarUIPerfil({}, auth.currentUser);
+        }
+    }));
+}
+
+// ==========================
+// PERFIL DE USUARIO
+// ==========================
+let currentAvatarBase64 = null;
+
+function actualizarUIPerfil(data, user) {
+    if(!user) return;
+    const nameEl = document.getElementById('user-name');
+    const avatarTopbar = document.getElementById('topbar-avatar');
+    
+    let nombre = user.displayName || data.nombre || user.email.split('@')[0];
+    if(nameEl) nameEl.textContent = nombre;
+    
+    let fotoUrl = data.fotoBase64 || user.photoURL || null;
+    const previewPerfil = document.getElementById('perfil-avatar-preview');
+    
+    if(fotoUrl) {
+        if(avatarTopbar) avatarTopbar.innerHTML = `<img src="${fotoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        if(previewPerfil) previewPerfil.innerHTML = `<img src="${fotoUrl}">`;
+        currentAvatarBase64 = data.fotoBase64 || null; 
+    } else {
+        if(avatarTopbar) avatarTopbar.innerHTML = `<i class="fa-solid fa-user"></i>`;
+        if(previewPerfil) previewPerfil.innerHTML = `<i class="fa-solid fa-user"></i>`;
+        currentAvatarBase64 = null;
+    }
+
+    const inputNombre = document.getElementById('perfil-nombre');
+    if(inputNombre && inputNombre.value === '') inputNombre.value = nombre;
+    
+    const inputTel = document.getElementById('perfil-telefono');
+    if(inputTel && inputTel.value === '') inputTel.value = data.telefono || '';
+    
+    const inputExt = document.getElementById('perfil-ext');
+    if(inputExt && inputExt.value === '') inputExt.value = data.ext || '';
+    
+    const inputPres = document.getElementById('perfil-presentacion');
+    if(inputPres && inputPres.value === '') inputPres.value = data.presentacion || '';
+}
+
+const formPerfil = document.getElementById('form-perfil');
+if(formPerfil) {
+    formPerfil.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if(!currentUser) return;
+        
+        const nuevoNombre = document.getElementById('perfil-nombre').value.trim();
+        const tel = document.getElementById('perfil-telefono').value.trim();
+        const ext = document.getElementById('perfil-ext').value.trim();
+        const pres = document.getElementById('perfil-presentacion').value.trim();
+        
+        try {
+            await currentUser.updateProfile({ displayName: nuevoNombre });
+            
+            await db.collection('users').doc(currentUser.uid).set({
+                nombre: nuevoNombre,
+                telefono: tel,
+                ext: ext,
+                presentacion: pres,
+                fotoBase64: currentAvatarBase64
+            }, { merge: true });
+            
+            showToast('Perfil actualizado correctamente', 'success');
+        } catch(err) {
+            console.error(err);
+            showToast('Error al actualizar el perfil', 'error');
+        }
+    });
+}
+
+const fileInput = document.getElementById('perfil-foto-input');
+if(fileInput) {
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const maxSize = 200;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > height) {
+                    if (width > maxSize) {
+                        height *= maxSize / width;
+                        width = maxSize;
+                    }
+                } else {
+                    if (height > maxSize) {
+                        width *= maxSize / height;
+                        height = maxSize;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                currentAvatarBase64 = dataUrl;
+                document.getElementById('perfil-avatar-preview').innerHTML = `<img src="${dataUrl}">`;
+            }
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+window.eliminarFotoPerfil = () => {
+    currentAvatarBase64 = null;
+    document.getElementById('perfil-avatar-preview').innerHTML = `<i class="fa-solid fa-user"></i>`;
+    const fileInput = document.getElementById('perfil-foto-input');
+    if(fileInput) fileInput.value = "";
+    
+    if(currentUser) {
+        db.collection('users').doc(currentUser.uid).set({ fotoBase64: null }, { merge: true });
+        showToast('Foto eliminada. Guarda el perfil para confirmar.', 'info');
+    }
+};
+
+const formPassword = document.getElementById('form-password');
+if(formPassword) {
+    formPassword.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if(!currentUser) return;
+        
+        const p1 = document.getElementById('perfil-pass-new').value;
+        const p2 = document.getElementById('perfil-pass-confirm').value;
+        
+        if(p1 !== p2) {
+            return showToast('Las contraseñas no coinciden', 'warning');
+        }
+        
+        try {
+            await currentUser.updatePassword(p1);
+            showToast('Contraseña actualizada con éxito', 'success');
+            e.target.reset();
+        } catch(err) {
+            if(err.code === 'auth/requires-recent-login') {
+                showToast('Por seguridad, cierra sesión y vuelve a entrar antes de cambiar tu contraseña', 'error');
+            } else {
+                console.error(err);
+                showToast('Error: ' + err.message, 'error');
+            }
+        }
+    });
 }
 
 // ==========================
