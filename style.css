@@ -223,7 +223,7 @@ select.input-estilo { appearance: none; cursor: pointer; }
 .main-layout { display: flex; flex: 1; overflow: hidden; padding: 20px; gap: 20px; }
 
 /* Columns */
-.col-left { width: 15%; min-width: 220px; display: flex; flex-direction: column; padding: 20px 0; overflow-y: auto; background: var(--sidebar-bg); }
+.col-left { width: 15%; min-width: 220px; display: flex; flex-direction: column; padding: 20px 0 0 0; overflow-y: auto; background: var(--sidebar-bg); }
 .col-center { width: 70%; flex: 1; overflow-y: auto; position: relative; border-radius: var(--border-radius); background: var(--bg-primary); }
 .col-right { width: 15%; min-width: 280px; padding: 20px; overflow-y: auto; background: var(--bg-secondary); border-left: 1px solid var(--card-border); }
 
