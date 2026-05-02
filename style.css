@@ -50,6 +50,7 @@ body {
 .mb-10 { margin-bottom: 10px; }
 .mb-20 { margin-bottom: 20px; }
 .mt-20 { margin-top: 20px; }
+.mt-auto { margin-top: auto; }
 .p-20 { padding: 20px; }
 .w-100 { width: 100%; }
 .flex-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
