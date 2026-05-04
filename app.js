@@ -86,6 +86,49 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
     });
 });
 
+document.getElementById('btn-register').addEventListener('click', () => {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    const errorEl = document.getElementById('auth-error');
+    
+    if(!email || !pass) {
+        errorEl.textContent = "Introduce correo y contraseña para registrarte.";
+        return;
+    }
+    
+    auth.createUserWithEmailAndPassword(email, pass).then(userCred => {
+        showToast('Cuenta creada con éxito', 'success');
+    }).catch(err => {
+        if(err.code === 'auth/email-already-in-use') {
+            errorEl.textContent = "El correo ya está en uso.";
+        } else if(err.code === 'auth/weak-password') {
+            errorEl.textContent = "La contraseña debe tener al menos 6 caracteres.";
+        } else {
+            errorEl.textContent = "Error al crear la cuenta.";
+        }
+        showToast('Error de registro', 'error');
+    });
+});
+
+document.getElementById('link-recover-password').addEventListener('click', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const errorEl = document.getElementById('auth-error');
+    
+    if(!email) {
+        errorEl.textContent = "Introduce tu correo para recuperar la contraseña.";
+        return;
+    }
+    
+    auth.sendPasswordResetEmail(email).then(() => {
+        showToast('Correo de recuperación enviado', 'info');
+        errorEl.textContent = "";
+    }).catch(err => {
+        errorEl.textContent = "Error al enviar correo de recuperación.";
+        showToast('Error', 'error');
+    });
+});
+
 document.getElementById('btn-google-login').addEventListener('click', () => {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch(err => {
